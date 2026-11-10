@@ -1,0 +1,69 @@
+  <section id="view-login" hidden>
+    <div class="lg-vis">
+      <canvas id="lg-cv" aria-hidden="true"></canvas>
+      <div class="lg-word">Sales<b>Pilot</b></div>
+      <div class="lg-copy">
+        <h2>상담 한 번으로<br>견적부터 구축요청까지</h2>
+        <p>녹음한 상담을 올리면 고객 정보와 요구사항을 정리하고, 더존 표준 양식 그대로 견적서·계약서·할인기안·구축요청서 초안을 만듭니다.</p>
+        <div class="lg-flow"><span>상담</span><i>→</i><span>견적서</span><i>→</i><span>계약서</span><i>→</i><span>할인기안</span><i>→</i><span>구축요청</span></div>
+      </div>
+      <div class="lg-foot"><b>AX영업Unit 내부용</b> · © 2026 회사01</div>
+    </div>
+    <div class="lg-panel">
+      <h1>로그인</h1>
+      <p class="lead" id="lg-lead"></p>
+      <form id="lg-form" class="lg-form" novalidate>
+        <div class="lg-back" id="lg-back" hidden><div class="av" id="lg-av"></div><div><div class="nm" id="lg-bnm"></div><div class="og" id="lg-bog"></div></div></div>
+        <div id="lg-fields" class="lg-form">
+          <div class="lg-row"><input class="pill" id="lg-name" placeholder="이름" autocomplete="name" aria-label="이름"><input class="pill" id="lg-rank" placeholder="직급 (예: 과장)" aria-label="직급"></div>
+          <input class="pill" id="lg-org" placeholder="소속 (예: 솔루션영업본부 솔루션영업 1Unit)" autocomplete="organization" aria-label="소속">
+          <input class="pill" id="lg-phone" placeholder="연락처 (전화번호 비공개)" autocomplete="tel" inputmode="tel" aria-label="연락처">
+          <input class="pill" id="lg-email" placeholder="이메일 (선택)" type="email" autocomplete="email" aria-label="이메일">
+        </div>
+        <div class="lg-err" id="lg-err" role="alert"></div>
+        <button class="lg-next" type="submit">다음</button>
+        <label class="lg-chk"><input type="checkbox" id="lg-keep" checked> 이 창을 닫을 때까지 로그인 유지</label>
+        <button class="lg-link" type="button" id="lg-other">다른 정보로 시작하기</button>
+      </form>
+      <p class="lg-note">Claude 계정으로 접속한 팀원만 이 화면을 열 수 있어 비밀번호는 받지 않습니다. 입력한 정보는 본인만 볼 수 있게 저장되며 견적서 담당자·기안자 칸에 쓰입니다.</p>
+    </div>
+  </section>
+  <section id="view-upload" class="up" hidden>
+    <div class="page-head"><div><div class="eyebrow">상담 자료 올리기</div><h1>오늘 상담한 내용을 올려 주세요</h1><p>녹음이나 녹취 파일을 올리면 Claude가 고객 정보와 요구사항을 정리하고 회의록을 만듭니다. 정리된 내용으로 견적서부터 바로 작성할 수 있습니다.</p></div><div class="sp"></div><button class="btn" id="up-skip">건너뛰고 대시보드로 →</button></div>
+    <div class="drop" id="up-drop">
+      <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/></svg></div>
+      <h2>파일을 여기에 끌어다 놓으세요</h2>
+      <p>음성 파일(mp3 · m4a · wav 등) 또는 녹취 텍스트(txt · docx · srt · vtt)</p>
+      <button class="btn pri" id="up-pick" type="button">파일 선택</button>
+      <input type="file" id="up-anyfile" multiple hidden accept="audio/*,video/mp4,video/webm,.m4a,.mp3,.wav,.aac,.ogg,.flac,.amr,.3gp,.txt,.srt,.vtt,.md,.csv,.json,.docx">
+    </div>
+    <div class="tiles">
+      <button class="tile" id="up-rec" type="button"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg></span><b>실시간 녹음</b><span>스피커폰 통화나 대면 미팅 중에 켜 두면 대화가 바로 글로 받아써집니다.</span><small></small></button>
+      <button class="tile" id="up-audio" type="button"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></svg></span><b>음성 파일 변환</b><span>녹음 파일을 올리면 이 PC의 브라우저 안에서 한국어 텍스트로 바뀝니다. 외부로 전송되지 않습니다.</span><small>1시간 녹음 약 5~15분</small></button>
+      <button class="tile" id="up-text" type="button"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h7M9 17h5"/></svg></span><b>녹취 텍스트 등록</b><span>클로바노트 등에서 받은 녹취록 파일을 그대로 올립니다. 여러 개를 한 번에 올릴 수 있습니다.</span><small>txt · docx · srt · vtt · json</small></button>
+      <input type="file" id="up-afile" hidden accept="audio/*,video/mp4,video/webm,.m4a,.mp3,.wav,.aac,.ogg,.flac,.amr,.3gp">
+      <input type="file" id="up-tfile" hidden multiple accept=".txt,.srt,.vtt,.md,.csv,.json,.docx,text/plain">
+    </div>
+    <div class="up-steps"><span>올리기</span><i>→</i><span>내용 분석 · 회의록</span><i>→</i><span>견적서</span><i>→</i><span>계약서</span><i>→</i><span>할인기안</span><i>→</i><span>구축요청</span></div>
+    <div class="up-grid"><div class="hp"><h2>최근 상담</h2><div class="bd mt" id="up-recent"></div></div></div>
+  </section>
+  <section id="view-home" hidden>
+    <div class="page-head hm-head"><div><div class="eyebrow" id="hm-eyebrow"></div><h1 id="hm-title">안녕하세요</h1></div><div class="sp"></div>
+      <div class="qa"><select id="hm-newq" aria-label="새 견적 양식 선택"></select><button class="btn pri" id="hm-up">상담 올리기</button></div></div>
+    <div class="hk" id="hm-kpi"></div>
+    <div class="hg">
+      <div class="hp hp-todo"><h2>해야 할 일<span class="sp"></span><span class="cnt" id="hm-todo-n"></span></h2><div class="bd todo" id="hm-todo"></div></div>
+      <div class="hcol">
+        <div class="hp"><h2>영업 파이프라인</h2><div class="bd fun" id="hm-fun"></div></div>
+        <div class="hp hp-grow"><h2>월별 견적 금액<span class="sp"></span><span class="hint">일시납 · 견적일 기준</span></h2><div class="bd chart" id="hm-chart"></div></div>
+      </div>
+      <div class="hcol">
+        <div class="hp"><h2>최근 상담<span class="sp"></span><a data-route="upload">상담 올리기</a></h2><div class="bd mt" id="hm-meet"></div></div>
+        <div class="hp hp-grow"><h2>최근 문서</h2><div class="bd"><table class="act"><tbody id="hm-act"></tbody></table></div></div>
+      </div>
+    </div>
+  </section>
+  <section id="view-sites" hidden>
+    <div class="page-head"><div><div class="eyebrow">업무사이트</div><h1>함께 쓰는 업무 도구</h1><p>상담과 견적 준비에 쓰는 사내 도구입니다. 각 사이트는 보안 정책상 이 화면 안에 띄울 수 없어 새 탭에서 열립니다.</p></div></div>
+    <div class="sites" id="sites-list"></div>
+  </section>

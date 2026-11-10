@@ -1,0 +1,26 @@
+  <section id="view-xedit" hidden>
+    <div class="ed-bar">
+      <button class="btn" id="x-back">← 목록</button>
+      <span class="ttl" id="x-title"></span>
+      <span class="tpl-tag" id="x-tpl"></span>
+      <span class="dirty" id="xdirty" hidden>저장되지 않음</span>
+      <div class="sp"></div>
+      <select class="mk" id="x-mkct" aria-label="이 견적으로 계약서 만들기"><option value="">계약서 만들기…</option><option value="cloud">Amaranth 10 Cloud 공급계약</option><option value="csap">Amaranth 10 Cloud CSAP 공급계약(공공)</option><option value="onprem">Amaranth 10 구축형 공급계약</option><option value="dogup">공급(도급) 계약 · 갑/을</option><option value="onepe">ONE AI Private Edition 공급계약</option></select>
+      <button class="btn" id="x-mkdc">할인기안 작성</button>
+      <button class="btn" id="x-dup">복제</button>
+      <button class="btn warn" id="x-del">삭제</button>
+      <button class="btn" id="x-html">인쇄용 HTML 저장</button>
+      <button class="btn" id="x-pdf">PDF 저장</button>
+      <button class="btn pri" id="x-save">저장</button>
+    </div>
+    <div class="xtool">
+      <div class="seg" id="x-tabs" role="group" aria-label="보기"><button class="btn" data-xt="sheet" aria-pressed="true">견적서</button><button class="btn" data-xt="chk" aria-pressed="false">체크리스트</button><button class="btn" data-xt="pdf" aria-pressed="false">PDF 미리보기</button></div>
+      <label class="xf">배포 유형 <select id="x-sheet" aria-label="배포 유형"></select></label>
+      <label class="xf">견적일자 <input type="date" id="x-date"></label>
+      <label class="xf">상태 <select id="x-status" aria-label="견적 상태"></select></label>
+      <label class="xf"><input type="checkbox" id="x-cover"> 표지 포함</label>
+      <label class="xf">보기 <select id="x-zoomsel" aria-label="확대"><option value="fit">화면 맞춤</option><option value="0.75">75%</option><option value="1">100%</option></select></label>
+    </div>
+    <div id="x-body"></div>
+    <div id="x-pick" class="xpop" hidden></div>
+  </section>

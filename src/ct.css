@@ -1,0 +1,66 @@
+
+/* 계약서 */
+.page .att-label{font-size:11px;font-weight:700;color:#333;margin-bottom:6px}
+.page.tpl-ct{padding-top:84px;font-size:10px;color:#222}
+.page .chead{position:absolute;top:28px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:6.8px;color:#555}
+.page .chead .url{color:#1f63d8;text-decoration:underline;font-size:7.5px}
+.tpl-ct .ct-title{text-align:center;font-size:24px;font-weight:700;color:#3d4149;margin:0 0 14px;letter-spacing:-.3px}
+.page .ten{color:#1aa0dc}
+.tpl-ct .ct-sec{display:inline-block;min-width:150px;font-size:12px;font-weight:700;padding-bottom:5px;border-bottom:2px solid #333}
+.tpl-ct .ct-rowhead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px}
+.tpl-ct .ct-rowhead .unit{font-size:9px;color:#333}
+.tpl-ct .ctab td{padding:6px 5px;font-size:9.8px;vertical-align:middle}
+.tpl-ct .ctab td.k{width:150px;letter-spacing:.6px;color:#222;vertical-align:top;padding-top:7px}
+.tpl-ct .ctab td.v{border-bottom:1px solid #666}
+.tpl-ct .ctab tr.first td.v{border-top:1px solid #666}
+.tpl-ct .ctab tr.gap td{height:12px;padding:0}
+.tpl-ct .ctab tr.gap td.v{border-bottom:1px solid #666}
+.tpl-ct .items{display:grid;grid-template-columns:repeat(5,1fr);gap:0;font-size:8.6px}
+.tpl-ct .items span{padding:5px 0;border-bottom:1px solid #d5d8dd;white-space:nowrap;overflow:hidden}
+.page .cbx{display:inline-block;width:10px;height:10px;border:1px solid #8a8f98;border-radius:2px;vertical-align:-1.5px;margin-right:5px;position:relative;background:#fff}
+.page .cbx.on{background:#1f74d6;border-color:#1f74d6}
+.page .cbx.on::after{content:"";position:absolute;left:3px;top:0.5px;width:3px;height:6px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg)}
+.tpl-ct .amtg{display:grid;grid-template-columns:44px minmax(0,1fr) 16px 118px 78px 112px;align-items:center;gap:0 4px}
+.tpl-ct .amtg .w{text-align:center}
+.tpl-ct .amtg .pn{font-size:8.6px;white-space:pre-line;line-height:1.3}
+.tpl-ct .ct-special{margin-top:12px;font-size:9.4px;line-height:1.6;white-space:pre-line}
+.tpl-ct .ct-clause{border-top:1.5px solid #333;margin-top:14px;padding-top:9px;font-size:9.5px;line-height:1.7;white-space:pre-line}
+.tpl-ct .ct-att{border-top:1px solid #666;margin-top:8px;padding-top:6px}
+.tpl-ct .ct-att td{padding:4px 5px;font-size:9.5px}
+.tpl-ct .ct-date{text-align:center;font-size:12px;margin:28px 0 24px}
+.tpl-ct .ct-parties{display:grid;grid-template-columns:1fr 1fr;gap:0 34px}
+.tpl-ct .ct-parties .pl{font-size:10px;margin-bottom:6px}
+.tpl-ct .ct-parties table{border-top:1px solid #444}
+.tpl-ct .ct-parties td{border-bottom:1px solid #444;padding:7px 6px;font-size:9.6px;height:28px}
+.tpl-ct .ct-parties td.k{width:76px;letter-spacing:1.5px}
+.tpl-ct .ct-parties td.v{text-align:center}
+.tpl-ct .ct-parties td.in{width:30px;text-align:right;color:#444}
+.tpl-ct .paytab th{background:#f0f1f3;font-weight:500;font-size:9.2px;padding:6px 4px;text-align:center;line-height:1.35}
+.tpl-ct .paytab th.blank{background:#fff}
+.tpl-ct .paytab td{padding:9px 4px;font-size:9.4px;border-bottom:1px dotted #d6d9de;line-height:1.35;white-space:pre-line}
+.tpl-ct .paytab td.lab{letter-spacing:2px;border-bottom:none}
+.tpl-ct .paytab tr.tt td{font-weight:700}
+.tpl-ct .notes{font-size:8.4px;line-height:1.65;margin:8px 0 0 130px;white-space:pre-line}
+.tpl-ct .schtab th{background:#f0f1f3;font-weight:600;font-size:9.4px;padding:7px 4px;text-align:center;white-space:pre-line;line-height:1.35}
+.tpl-ct .schtab td{padding:8px 5px;font-size:9.4px;text-align:center;border-bottom:1px dotted #d6d9de;border-right:1px solid #e3e5e9;white-space:pre-line;line-height:1.4}
+.tpl-ct .schtab td:last-child{border-right:none}
+.tpl-ct .schtab td.cont{border-top-color:transparent}
+.tpl-ct .schtab td.nob{border-bottom-color:transparent}
+.tpl-ct .ph{border:1.5px dashed #9aa1ab;border-radius:6px;padding:30px;text-align:center;color:#5a606b;font-size:11px;line-height:1.8;margin-top:40px}
+/* 계약 표지 */
+.page .ccover{position:absolute;inset:0;padding:70px 56px}
+.page .ccover .mp{color:#2ea3e3;font-weight:700;font-size:14px;line-height:1.2}
+.page .ccover .cn{margin-top:62px;font-size:24px;font-weight:700;color:#3d4149}
+.page .ccover .ctt{margin-top:8px;font-size:25px;font-weight:700;color:#3d4149;letter-spacing:-.3px}
+.page .ccover .csub{margin-top:8px;font-size:10px;font-weight:700;color:#3d4149}
+.page .ccover .lines{margin-top:120px;font-size:11.5px;line-height:1.9;color:#3d4149;white-space:pre-line}
+.page .ccover .arc{position:absolute;left:260px;bottom:120px;width:340px;height:170px;overflow:hidden}
+.page .ccover .arc::before{content:"";position:absolute;left:0;top:0;width:340px;height:340px;border-radius:50%;border:78px solid #1d9ee6;box-sizing:border-box}
+.page .ccover .dot{position:absolute;left:200px;bottom:340px;width:56px;height:56px;border-radius:50%;border:14px solid #1d9ee6;box-sizing:border-box}
+.page .ccover .logo{position:absolute;left:56px;bottom:108px}
+.page .ccover .logo .dzlogo{font-size:16px}
+.page .ccover .logo .u{font-size:9px;color:#1f63d8;text-decoration:underline}
+.page .ccover .copt{margin-top:6px;font-size:10px;color:#3d4149}
+.page .ccover .tlab{font-size:11px;font-weight:700;color:#333;margin-bottom:16px}
+.page .ccover .tct{margin-top:70px;font-size:30px;line-height:1.4;white-space:pre-line}
+.page .cpfoot{position:absolute;left:0;right:0;bottom:20px;text-align:center;font-size:9px;color:#555}

@@ -1,0 +1,21 @@
+  <section id="view-cedit" hidden>
+    <div class="ed-bar">
+      <button class="btn" id="cback">← 목록</button>
+      <span class="ttl" id="ct-title"></span>
+      <span class="dirty" id="cdirty" hidden>저장되지 않음</span>
+      <div class="sp"></div>
+      <button class="btn" id="cdup">복제</button>
+      <button class="btn warn" id="cdel">삭제</button>
+      <button class="btn" id="cexp-html">인쇄용 HTML 저장</button>
+      <button class="btn" id="cexp-pdf">PDF 저장</button>
+      <button class="btn pri" id="csave">저장</button>
+    </div>
+    <div class="tabs"><button class="btn" data-ctab="form" aria-pressed="true">입력</button><button class="btn" data-ctab="prev" aria-pressed="false">미리보기</button></div>
+    <div class="ed-grid" id="ced-grid" data-tab="form">
+      <div class="ed-form" id="ct-form"></div>
+      <div class="prev-col">
+        <div class="prev-head"><span id="cprev-info">A4 미리보기</span><span>표지 → 계약서 → 별첨 순</span></div>
+        <div class="prev" id="cprev"></div>
+      </div>
+    </div>
+  </section>
