@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sales Pilot</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -649,6 +650,11 @@ body.is-login .wrap{padding:0;max-width:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="./ai-client.js?v=20261111-1"></script>
+<script src="./folder-storage.js?v=20261111-1"></script>
+<script src="./user-settings.js?v=20261111-1"></script>
+<script src="./dictation.js?v=20261111-1"></script>
+<script src="./standalone.js?v=20261111-1"></script>
 <script>
 /* 미니 엑셀 수식 엔진 (견적 양식 전용) */
 const XL=(function(){
@@ -2780,6 +2786,7 @@ $('#bcopy').onclick=()=>{const B=brBlocks(S.bdraft);const last=B[B.length-1];
 
 
 /* ================= 음성 파일 → 텍스트 (브라우저 안에서 실행, 한국어 Zipformer) ================= */
+window.SalesPilotStt={init:sttInit,recognize:sttRecognize,decode:sttDecode};
 const STT={ready:null,enc:null,dec:null,joi:null,tok:null,busy:false,abort:false};
 const STT_BASE='stt/';
 function sttLoadScript(src){return new Promise((ok,no)=>{if(window.ort)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('script'));document.head.appendChild(s)})}
@@ -2902,10 +2909,19 @@ function vEarly(c){
     d.onState(({state,reason})=>{S.dictState=state;vDictUi();if(state==='idle'){$('#v-partial').textContent='';
       const msg={hidden:'화면을 벗어나 녹음이 멈췄습니다. 돌아와서 다시 시작하세요.',time_limit:'한 번에 최대 60분까지 녹음됩니다. 이어서 녹음하려면 다시 시작하세요.',not_granted:'마이크 사용이 허용되지 않았습니다. 대화 내용을 직접 붙여넣어 주세요.',unavailable:'이 계정이나 환경에서는 음성 받아쓰기를 쓸 수 없습니다. 대화 내용을 붙여넣어 주세요.',rate_limited:'잠시 후 다시 시작해 주세요.',upstream_error:'마이크 또는 음성 인식에 문제가 생겼습니다. 다시 시작해 주세요.'}[reason];
       if(msg)toast(msg);if(reason==='not_granted'||reason==='unavailable'){S.dictOff=true;vDictUi()}
-      if(S.vdraft&&S.vdraft.transcript&&S.vdraft.status==='녹음 중'){S.vdraft.status='녹음 완료';setVDirty(true)}}})});
+      if(S.vdraft&&S.vdraft.status==='녹음 중'){S.vdraft.status='녹음 완료';setVDirty(true)}}})});
   c.use('sample').then(s=>{S.sample=s;vAiUi()});
 }
 async function vInit(c,db){
+  window.addEventListener('salespilot-profile-change',event=>{
+    if(event.detail&&event.detail.path==='data/users/'+S.uid+'/profile'){
+      S.me=clone(event.detail.profile);
+      try{localStorage.setItem(ME_LS,JSON.stringify(S.me));}catch(_){}
+      renderMeChip();if(typeof renderNav==='function')renderNav();
+      if(S.view==='xedit'&&S.isNew){xlApplyMe();refreshX();}
+    }
+  });
+  window.addEventListener('salespilot-ai-change',()=>{if(window.SalesPilotPlatform){S.sample=window.SalesPilotPlatform.getSample();vAiUi();}});
   let u=null;try{u=await c.use('user')}catch(_){}
   if(u&&u.id){try{S.uid=await u.id()}catch(_){}}
   let p=null;
@@ -2917,8 +2933,8 @@ async function vInit(c,db){
 }
 function vDictUi(){const b=$('#v-rec');if(!b)return;const on=S.dictState==='listening'||S.dictState==='starting';
   b.hidden=!S.dict||S.dictOff;$('#v-nodict').hidden=!!(S.dict&&!S.dictOff);
-  b.textContent=on?(S.dictState==='starting'?'마이크 연결 중…':'녹음 멈추기'):'녹음 시작';b.classList.toggle('rec',on);$('#v-live').hidden=!on}
-function vAiUi(){const ok=!!S.sample;['#v-analyze','#v-mkq','#v-sum'].forEach(x=>{const b=$(x);if(b){b.disabled=!ok;b.title=ok?'':'이 화면에서는 Claude 분석을 사용할 수 없습니다'}})}
+  b.disabled=S.dictState==='processing';b.textContent=S.dictState==='processing'?'녹음 인식 중…':on?(S.dictState==='starting'?'마이크 연결 중…':'녹음 멈추기'):'녹음 시작';b.classList.toggle('rec',on);$('#v-live').hidden=!(on||S.dictState==='processing')}
+function vAiUi(){const ok=!!S.sample;['#v-analyze','#v-mkq','#v-sum'].forEach(x=>{const b=$(x);if(b){b.disabled=!ok;b.title=ok?'':'AI 서버 연결 설정에서 실제 API 주소와 모델을 설정해야 합니다'}})}
 function setVDirty(v){S.vdirty=v;$('#vdirty').hidden=!v}
 const vCount=()=>{const t=$('#v-text').value;$('#v-count').textContent=`${t.replace(/\s/g,'').length.toLocaleString()}자`};
 
@@ -3308,8 +3324,10 @@ function renderNav(){const cur=S.view==='dash'?TAB_ROUTE[S.tab]:S.view==='home'?
   $('#snav-items').innerHTML=NAV.map(n=>n?`<a class="it" href="#${n[0]}" data-route="${n[0]}"${cur===n[0]?' aria-current="page"':''} title="${n[1]}">${svg(n[2])}<span class="lb">${n[1]}</span>${badge[n[0]]&&badge[n[0]][0]?`<span class="bd${badge[n[0]][1]?' hot':''}">${badge[n[0]][0]}</span>`:''}</a>`:'<div class="grp">문서</div>').join('')+`<button type="button" class="it grpbtn" id="snav-sites" aria-expanded="${S.sitesOpen?'true':'false'}" aria-controls="snav-sub" title="업무사이트">${svg('grid')}<span class="lb">업무사이트</span><span class="chev">${svg('chev')}</span></button><div class="sub" id="snav-sub"${S.sitesOpen?'':' hidden'}>`+NAV_SITES.map(([l,u,ic],i)=>`<a class="it" href="#sites" data-route="sites" data-site="${i}"${cur==='sites'&&S.siteSel===i?' aria-current="page"':''} title="${l}">${svg(ic)}<span class="lb">${l}</span></a>`).join('')+'</div>';
   const p=S.me;$('#snav-av').textContent=p&&p.name?p.name.slice(0,1):'?';$('#snav-nm').textContent=p&&p.name?meNR():'정보 미입력';$('#snav-og').textContent=p&&p.org?p.org:'';$('#snav-og').title=p&&p.org||''}
 const editorDirty=()=>(S.view==='xedit'||S.view==='edit')&&S.dirty||S.view==='cedit'&&S.cdirty||S.view==='dedit'&&S.ddirty||S.view==='bedit'&&S.bdirty||S.view==='vedit'&&S.vdirty;
+window.SalesPilotWorkspace={hasUnsavedChanges:()=>!!editorDirty(),isBusy:()=>['starting','listening','processing'].includes(S.dictState)||(typeof STT!=='undefined'&&STT.busy)};
 let navArm=0;
 function go(route){
+  if(route==='settings'&&window.SalesPilotSettings){Promise.resolve(window.SalesPilotSettings.openPage()).catch(error=>toast(error.message||'환경설정을 열지 못했습니다.'));return;}
   if(!S.authed){show('login');return}
   if(editorDirty()&&Date.now()-navArm>3500){navArm=Date.now();toast('저장하지 않은 변경이 있습니다. 한 번 더 누르면 저장하지 않고 이동합니다.');renderNav();return}
   navArm=0;
@@ -3319,7 +3337,7 @@ function go(route){
 }
 $('#snav-items').addEventListener('click',e=>{if(e.target.closest('#snav-sites')){S.sitesOpen=!S.sitesOpen;try{localStorage.setItem('qd-sites-open',S.sitesOpen?'1':'0')}catch(_){}renderNav();return}const a=e.target.closest('[data-route]');if(!a)return;e.preventDefault();if(a.dataset.site!=null)S.siteSel=+a.dataset.site;go(a.dataset.route)});
 $('#snav-brand').onclick=e=>{e.preventDefault();go('home')};
-$('#snav-edit').onclick=()=>openProfile(false);
+$('#snav-edit').onclick=()=>{if(window.SalesPilotSettings)go('settings');else openProfile(false);};
 $('#snav-out').onclick=()=>{if(editorDirty()){toast('먼저 저장하세요');return}try{sessionStorage.removeItem('qd-session')}catch(_){}S.authed=false;show('login')};
 window.addEventListener('hashchange',()=>{const r=location.hash.slice(1);if(S.authed&&r&&r!==curRoute())go(r)});
 const curRoute=()=>S.view==='dash'?TAB_ROUTE[S.tab]:S.view;
@@ -3477,5 +3495,3 @@ async function init(){
 init();
 })();
 </script>
-
-</body></html>

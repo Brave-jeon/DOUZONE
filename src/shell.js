@@ -18,8 +18,10 @@ function renderNav(){const cur=S.view==='dash'?TAB_ROUTE[S.tab]:S.view==='home'?
   $('#snav-items').innerHTML=NAV.map(n=>n?`<a class="it" href="#${n[0]}" data-route="${n[0]}"${cur===n[0]?' aria-current="page"':''} title="${n[1]}">${svg(n[2])}<span class="lb">${n[1]}</span>${badge[n[0]]&&badge[n[0]][0]?`<span class="bd${badge[n[0]][1]?' hot':''}">${badge[n[0]][0]}</span>`:''}</a>`:'<div class="grp">문서</div>').join('')+`<button type="button" class="it grpbtn" id="snav-sites" aria-expanded="${S.sitesOpen?'true':'false'}" aria-controls="snav-sub" title="업무사이트">${svg('grid')}<span class="lb">업무사이트</span><span class="chev">${svg('chev')}</span></button><div class="sub" id="snav-sub"${S.sitesOpen?'':' hidden'}>`+NAV_SITES.map(([l,u,ic],i)=>`<a class="it" href="#sites" data-route="sites" data-site="${i}"${cur==='sites'&&S.siteSel===i?' aria-current="page"':''} title="${l}">${svg(ic)}<span class="lb">${l}</span></a>`).join('')+'</div>';
   const p=S.me;$('#snav-av').textContent=p&&p.name?p.name.slice(0,1):'?';$('#snav-nm').textContent=p&&p.name?meNR():'정보 미입력';$('#snav-og').textContent=p&&p.org?p.org:'';$('#snav-og').title=p&&p.org||''}
 const editorDirty=()=>(S.view==='xedit'||S.view==='edit')&&S.dirty||S.view==='cedit'&&S.cdirty||S.view==='dedit'&&S.ddirty||S.view==='bedit'&&S.bdirty||S.view==='vedit'&&S.vdirty;
+window.SalesPilotWorkspace={hasUnsavedChanges:()=>!!editorDirty(),isBusy:()=>['starting','listening','processing'].includes(S.dictState)||(typeof STT!=='undefined'&&STT.busy)};
 let navArm=0;
 function go(route){
+  if(route==='settings'&&window.SalesPilotSettings){Promise.resolve(window.SalesPilotSettings.openPage()).catch(error=>toast(error.message||'환경설정을 열지 못했습니다.'));return;}
   if(!S.authed){show('login');return}
   if(editorDirty()&&Date.now()-navArm>3500){navArm=Date.now();toast('저장하지 않은 변경이 있습니다. 한 번 더 누르면 저장하지 않고 이동합니다.');renderNav();return}
   navArm=0;
@@ -29,7 +31,7 @@ function go(route){
 }
 $('#snav-items').addEventListener('click',e=>{if(e.target.closest('#snav-sites')){S.sitesOpen=!S.sitesOpen;try{localStorage.setItem('qd-sites-open',S.sitesOpen?'1':'0')}catch(_){}renderNav();return}const a=e.target.closest('[data-route]');if(!a)return;e.preventDefault();if(a.dataset.site!=null)S.siteSel=+a.dataset.site;go(a.dataset.route)});
 $('#snav-brand').onclick=e=>{e.preventDefault();go('home')};
-$('#snav-edit').onclick=()=>openProfile(false);
+$('#snav-edit').onclick=()=>{if(window.SalesPilotSettings)go('settings');else openProfile(false);};
 $('#snav-out').onclick=()=>{if(editorDirty()){toast('먼저 저장하세요');return}try{sessionStorage.removeItem('qd-session')}catch(_){}S.authed=false;show('login')};
 window.addEventListener('hashchange',()=>{const r=location.hash.slice(1);if(S.authed&&r&&r!==curRoute())go(r)});
 const curRoute=()=>S.view==='dash'?TAB_ROUTE[S.tab]:S.view;

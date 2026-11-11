@@ -1,5 +1,6 @@
 
 /* ================= 음성 파일 → 텍스트 (브라우저 안에서 실행, 한국어 Zipformer) ================= */
+window.SalesPilotStt={init:sttInit,recognize:sttRecognize,decode:sttDecode};
 const STT={ready:null,enc:null,dec:null,joi:null,tok:null,busy:false,abort:false};
 const STT_BASE='stt/';
 function sttLoadScript(src){return new Promise((ok,no)=>{if(window.ort)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('script'));document.head.appendChild(s)})}

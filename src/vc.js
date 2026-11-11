@@ -37,10 +37,19 @@ function vEarly(c){
     d.onState(({state,reason})=>{S.dictState=state;vDictUi();if(state==='idle'){$('#v-partial').textContent='';
       const msg={hidden:'화면을 벗어나 녹음이 멈췄습니다. 돌아와서 다시 시작하세요.',time_limit:'한 번에 최대 60분까지 녹음됩니다. 이어서 녹음하려면 다시 시작하세요.',not_granted:'마이크 사용이 허용되지 않았습니다. 대화 내용을 직접 붙여넣어 주세요.',unavailable:'이 계정이나 환경에서는 음성 받아쓰기를 쓸 수 없습니다. 대화 내용을 붙여넣어 주세요.',rate_limited:'잠시 후 다시 시작해 주세요.',upstream_error:'마이크 또는 음성 인식에 문제가 생겼습니다. 다시 시작해 주세요.'}[reason];
       if(msg)toast(msg);if(reason==='not_granted'||reason==='unavailable'){S.dictOff=true;vDictUi()}
-      if(S.vdraft&&S.vdraft.transcript&&S.vdraft.status==='녹음 중'){S.vdraft.status='녹음 완료';setVDirty(true)}}})});
+      if(S.vdraft&&S.vdraft.status==='녹음 중'){S.vdraft.status='녹음 완료';setVDirty(true)}}})});
   c.use('sample').then(s=>{S.sample=s;vAiUi()});
 }
 async function vInit(c,db){
+  window.addEventListener('salespilot-profile-change',event=>{
+    if(event.detail&&event.detail.path==='data/users/'+S.uid+'/profile'){
+      S.me=clone(event.detail.profile);
+      try{localStorage.setItem(ME_LS,JSON.stringify(S.me));}catch(_){}
+      renderMeChip();if(typeof renderNav==='function')renderNav();
+      if(S.view==='xedit'&&S.isNew){xlApplyMe();refreshX();}
+    }
+  });
+  window.addEventListener('salespilot-ai-change',()=>{if(window.SalesPilotPlatform){S.sample=window.SalesPilotPlatform.getSample();vAiUi();}});
   let u=null;try{u=await c.use('user')}catch(_){}
   if(u&&u.id){try{S.uid=await u.id()}catch(_){}}
   let p=null;
@@ -52,8 +61,8 @@ async function vInit(c,db){
 }
 function vDictUi(){const b=$('#v-rec');if(!b)return;const on=S.dictState==='listening'||S.dictState==='starting';
   b.hidden=!S.dict||S.dictOff;$('#v-nodict').hidden=!!(S.dict&&!S.dictOff);
-  b.textContent=on?(S.dictState==='starting'?'마이크 연결 중…':'녹음 멈추기'):'녹음 시작';b.classList.toggle('rec',on);$('#v-live').hidden=!on}
-function vAiUi(){const ok=!!S.sample;['#v-analyze','#v-mkq','#v-sum'].forEach(x=>{const b=$(x);if(b){b.disabled=!ok;b.title=ok?'':'이 화면에서는 Claude 분석을 사용할 수 없습니다'}})}
+  b.disabled=S.dictState==='processing';b.textContent=S.dictState==='processing'?'녹음 인식 중…':on?(S.dictState==='starting'?'마이크 연결 중…':'녹음 멈추기'):'녹음 시작';b.classList.toggle('rec',on);$('#v-live').hidden=!(on||S.dictState==='processing')}
+function vAiUi(){const ok=!!S.sample;['#v-analyze','#v-mkq','#v-sum'].forEach(x=>{const b=$(x);if(b){b.disabled=!ok;b.title=ok?'':'AI 서버 연결 설정에서 실제 API 주소와 모델을 설정해야 합니다'}})}
 function setVDirty(v){S.vdirty=v;$('#vdirty').hidden=!v}
 const vCount=()=>{const t=$('#v-text').value;$('#v-count').textContent=`${t.replace(/\s/g,'').length.toLocaleString()}자`};
 

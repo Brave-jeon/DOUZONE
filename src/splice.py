@@ -96,5 +96,16 @@ exec(open('splice_br.py').read())
 exec(open('splice_cp.py').read())
 exec(open('splice_vc.py').read())
 exec(open('splice_shell.py').read())
-open(p,'w').write(s)
+from pathlib import Path
+import shutil
+appdir = Path('../app')
+appdir.mkdir(exist_ok=True)
+assert '<script>' in s, '앱 초기화 스크립트 위치 확인 필요'
+s = '<!doctype html>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' + s
+modules = ('ai-client.js', 'folder-storage.js', 'user-settings.js', 'dictation.js', 'standalone.js')
+loaders = '\n'.join('<script src="./'+module+'?v=20261111-1"></script>' for module in modules)
+s = s.replace('<script>', loaders+'\n<script>', 1)
+for module in modules:
+    shutil.copy2(module, appdir / module)
+(appdir / 'index.html').write_text(s, encoding='utf-8')
 print('ok',len(s))
