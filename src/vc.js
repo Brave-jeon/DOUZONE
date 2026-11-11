@@ -6,19 +6,8 @@ const meNR=p=>{p=p||S.me;return p?[p.name,p.rank].filter(Boolean).join(' '):''};
 const meRN=p=>{p=p||S.me;return p?[p.rank,p.name].filter(Boolean).join(' '):''};           // 과장 담당자28
 const meLine=p=>{p=p||S.me;return p?meNR(p)+(p.phone?` (${p.phone})`:''):''};             // 담당자28 과장 (010-…)
 function renderMeChip(){const b=$('#me-btn');if(!b)return;b.textContent=S.me&&S.me.name?`${meNR()} · 내 정보`:'내 정보 입력';}
-function openProfile(first){const p=S.me||{};
-  $('#pf-first').hidden=!first;
-  [['pf-org',p.org],['pf-dept',p.dept],['pf-name',p.name],['pf-rank',p.rank],['pf-phone',p.phone],['pf-email',p.email]].forEach(([id,v])=>$('#'+id).value=v||'');
-  $('#pf-modal').hidden=false;setTimeout(()=>$('#pf-name').focus(),30)}
-async function saveProfile(){
-  const g=id=>$('#'+id).value.trim();const p={org:g('pf-org'),dept:g('pf-dept'),name:g('pf-name'),rank:g('pf-rank'),phone:g('pf-phone'),email:g('pf-email')};
-  if(!p.name||!p.org||!p.phone){toast('소속, 이름, 연락처는 꼭 입력해 주세요');return}
-  if(!p.dept)p.dept=p.org.split(/\s+/).pop();
-  S.me=p;try{localStorage.setItem(ME_LS,JSON.stringify(p))}catch(_){}
-  if(S.db&&S.uid){try{await S.db.doc('data/users/'+S.uid+'/profile').set(p)}catch(_){toast('내 정보를 공유 저장소에 저장하지 못해 이 브라우저에만 저장했습니다')}}
-  $('#pf-modal').hidden=true;renderMeChip();toast('내 정보를 저장했습니다. 새로 만드는 견적·기안·구축요청에 반영됩니다.');
-  if(S.view==='xedit'&&S.isNew){xlApplyMe();refreshX()}
-}
+function openProfile(){return window.SalesPilotAuth?window.SalesPilotAuth.openMyProfile():Promise.resolve(toast('회원 서버 미연결: PC 서버 버전으로 접속하세요.'));}
+async function saveProfile(){return openProfile();}
 $('#pf-save').onclick=saveProfile;$('#pf-cancel').onclick=()=>{$('#pf-modal').hidden=true};
 $('#me-btn').onclick=()=>openProfile(false);
 // 견적(엑셀 양식) 헤더·체크리스트에 작성자 정보
@@ -41,21 +30,16 @@ function vEarly(c){
   c.use('sample').then(s=>{S.sample=s;vAiUi()});
 }
 async function vInit(c,db){
+  const auth=window.SalesPilotAuth;
+  if(!auth){S.me=null;S.uid=null;return;}
+  await auth.ready();
+  const user=auth.getUser();S.uid=user?String(user.id):null;S.me=user;S.meLoaded=true;renderMeChip();
   window.addEventListener('salespilot-profile-change',event=>{
-    if(event.detail&&event.detail.path==='data/users/'+S.uid+'/profile'){
-      S.me=clone(event.detail.profile);
-      try{localStorage.setItem(ME_LS,JSON.stringify(S.me));}catch(_){}
-      renderMeChip();if(typeof renderNav==='function')renderNav();
-      if(S.view==='xedit'&&S.isNew){xlApplyMe();refreshX();}
-    }
+    const u=event.detail&&event.detail.user,current=auth.getUser();
+    if(!current||!u||String(u.id)!==String(current.id))return;
+    S.me=clone(u);renderMeChip();if(S.view==='xedit'&&S.isNew){xlApplyMe();refreshX();}
   });
   window.addEventListener('salespilot-ai-change',()=>{if(window.SalesPilotPlatform){S.sample=window.SalesPilotPlatform.getSample();vAiUi();}});
-  let u=null;try{u=await c.use('user')}catch(_){}
-  if(u&&u.id){try{S.uid=await u.id()}catch(_){}}
-  let p=null;
-  if(db&&S.uid){try{const snap=await db.doc('data/users/'+S.uid+'/profile').get();if(snap.exists)p=snap.data()}catch(_){}}
-  if(!p){try{p=JSON.parse(localStorage.getItem(ME_LS)||'null')}catch(_){}if(p&&db&&S.uid){db.doc('data/users/'+S.uid+'/profile').set(p).catch(()=>{})}}
-  S.me=p;S.meLoaded=true;renderMeChip();
   if(db)db.collection('meetings').onSnapshot(snap=>{const m=new Map();snap.docs.forEach(d=>{const v=d.data();if(v)m.set(d.id,Object.assign({},clone(v),{id:d.id}))});S.meetings=m;
     if(S.view==='vedit'){vRenderList();if(!S.vdirty&&S.vid&&m.has(S.vid)&&!S.visNew){const nv=m.get(S.vid);if(JSON.stringify(nv)!==JSON.stringify(S.vdraft)){S.vdraft=clone(nv);vRender()}}}},()=>{});
 }

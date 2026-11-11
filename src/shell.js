@@ -7,18 +7,14 @@ const IC={home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 
  bk:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 19V5"/><path d="M9 8h6M9 12h4"/>',grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',chev:'<path d="M6 9l6 6 6-6"/>',law:'<path d="M12 3v18"/><path d="M5 7h14"/><path d="M5 7l-3 6a3 3 0 006 0z"/><path d="M19 7l-3 6a3 3 0 006 0z"/><path d="M8 21h8"/>',coach:'<path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/>',ext:'<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>',d:'<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>',b:'<path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/>'};
 const svg=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
 const NAV=[['home','홈','home'],['upload','상담 올리기','up'],null,['quotes','견적서','q','q'],['contracts','계약서','c','c'],['discounts','할인기안','d','d'],['buildreqs','구축요청','b','b']];
-try{S.sitesOpen=localStorage.getItem('qd-sites-open')==='1'}catch(_){S.sitesOpen=false}
-const NAV_SITES=[['계약서 초안 생성기','https://pray2god4u.github.io/contract-generator/','c','AI Hub 법률 문서 서식 기반 계약서 초안','법률 문서 서식 1만 8천여 건을 86개 유형으로 정리해, 서식을 고르고 정보를 넣으면 계약서 초안을 만들어 줍니다.',['대분류·중분류·계약 문서/계약 외 문서로 서식 찾기','입력 정보를 반영한 초안 생성, 사내 GenAI로 AI 초안(사내망에서만)','워드(DOCX)·한글(HWPX)·텍스트로 저장, 복사'],'표준 계약서 양식에 없는 별도 약정서·합의서 초안 작성'],['기술문서 인텔리전스','https://pray2god4u.github.io/mfg-tech-copilot/search.html','bk','제조현장 기술지원용 기술문서 검색','AI Hub 기술문서 153건을 브라우저 안에서 검색·추천·비교합니다.',['하이브리드·의미·본문·카탈로그 검색 방식 선택','문서 유형(데이터 설명서, 구축·활용 가이드)·데이터셋 번호 필터','검색어는 서버로 보내지 않고 이 PC에서 처리','처음 실행 시 검색 모델(약 145MB)을 내려받음'],'제조 고객 상담 전 기술 근거 확인'],
- ['행정사례 AI','https://korea-admin-case-ai-mvp04.good4min.chatgpt.site/','law','공공사업 기획 근거 작업대','공공사업 기록 약 2만 4천 건에서 유사 사업을 찾아 예산·과업 범위·조달 방식을 비교합니다.',['기관명·사업명·목적·추정 예산으로 유사 사업 찾기','사례 5~10건을 골라 비교표 작성','출처 URL이 들어간 엑셀·문서 초안 내려받기','지방재정365·나라장터 공개 데이터 기반'],'공공기관 제안 전 유사 사례·예산 근거 정리'],
- ['공공영업 인사이트 코치','https://public-sales-insight-coach.onrender.com/','coach','회사01 영업 인사이트','공공영업 인사이트와 조직·계정을 관리하는 사내 앱입니다.',['영업 인사이트 조회','조직도·명단 가져오기와 검증','임직원 계정·권한 관리, 개인 초대 링크 발급','회사 이메일로만 로그인'],'공공 고객 영업 전략·코칭']];
 const TAB_ROUTE={q:'quotes',c:'contracts',d:'discounts',b:'buildreqs'},ROUTE_TAB={quotes:'q',contracts:'c',discounts:'d',buildreqs:'b'};
 const TAB_HEAD={q:['견적서','표준 가격확약서 8종으로 견적을 작성하고 진행 상황을 봅니다.'],c:['계약서','제출된 견적으로 계약서를 만들고 약관을 붙여 PDF로 저장합니다.'],d:['할인기안','할인이 있는 견적의 할인기안을 작성하고 결재 상태를 관리합니다.'],b:['구축요청','체결된 계약의 구축요청서를 작성해 전자결재에 올립니다.']};
 function renderNav(){const cur=S.view==='dash'?TAB_ROUTE[S.tab]:S.view==='home'?'home':S.view==='sites'?'sites':S.view==='upload'||S.view==='vedit'?'upload':S.view==='edit'||S.view==='xedit'?'quotes':S.view==='cedit'?'contracts':S.view==='dedit'?'discounts':S.view==='bedit'?'buildreqs':'';
   const cnt=homeCounts();const badge={quotes:[cnt.qDraft,false],discounts:[cnt.dNeed,cnt.dNeed>0],buildreqs:[cnt.bNeed,cnt.bNeed>0]};
-  $('#snav-items').innerHTML=NAV.map(n=>n?`<a class="it" href="#${n[0]}" data-route="${n[0]}"${cur===n[0]?' aria-current="page"':''} title="${n[1]}">${svg(n[2])}<span class="lb">${n[1]}</span>${badge[n[0]]&&badge[n[0]][0]?`<span class="bd${badge[n[0]][1]?' hot':''}">${badge[n[0]][0]}</span>`:''}</a>`:'<div class="grp">문서</div>').join('')+`<button type="button" class="it grpbtn" id="snav-sites" aria-expanded="${S.sitesOpen?'true':'false'}" aria-controls="snav-sub" title="업무사이트">${svg('grid')}<span class="lb">업무사이트</span><span class="chev">${svg('chev')}</span></button><div class="sub" id="snav-sub"${S.sitesOpen?'':' hidden'}>`+NAV_SITES.map(([l,u,ic],i)=>`<a class="it" href="#sites" data-route="sites" data-site="${i}"${cur==='sites'&&S.siteSel===i?' aria-current="page"':''} title="${l}">${svg(ic)}<span class="lb">${l}</span></a>`).join('')+'</div>';
+  $('#snav-items').innerHTML=NAV.map(n=>n?`<a class="it" href="#${n[0]}" data-route="${n[0]}"${cur===n[0]?' aria-current="page"':''} title="${n[1]}">${svg(n[2])}<span class="lb">${n[1]}</span>${badge[n[0]]&&badge[n[0]][0]?`<span class="bd${badge[n[0]][1]?' hot':''}">${badge[n[0]][0]}</span>`:''}</a>`:'<div class="grp">문서</div>').join('')+`<a class="it" href="#sites" data-route="sites" title="업무사이트"${cur==='sites'?' aria-current="page"':''}>${svg('grid')}<span class="lb">업무사이트</span></a>`+(window.SalesPilotAuth&&window.SalesPilotAuth.isMaster()?'<a class="it" href="#settings" data-route="settings" title="환경설정"><span aria-hidden="true">⚙</span><span class="lb">환경설정</span></a>':'');
   const p=S.me;$('#snav-av').textContent=p&&p.name?p.name.slice(0,1):'?';$('#snav-nm').textContent=p&&p.name?meNR():'정보 미입력';$('#snav-og').textContent=p&&p.org?p.org:'';$('#snav-og').title=p&&p.org||''}
 const editorDirty=()=>(S.view==='xedit'||S.view==='edit')&&S.dirty||S.view==='cedit'&&S.cdirty||S.view==='dedit'&&S.ddirty||S.view==='bedit'&&S.bdirty||S.view==='vedit'&&S.vdirty;
-window.SalesPilotWorkspace={hasUnsavedChanges:()=>!!editorDirty(),isBusy:()=>['starting','listening','processing'].includes(S.dictState)||(typeof STT!=='undefined'&&STT.busy)};
+window.SalesPilotWorkspace={hasUnsavedChanges:()=>!!editorDirty()||!!(S.siteWorkspace&&S.siteWorkspace.hasUnsavedChanges()),isBusy:()=>!!(S.siteWorkspace&&S.siteWorkspace.isBusy())||['starting','listening','processing'].includes(S.dictState)||(typeof STT!=='undefined'&&STT.busy)};
 let navArm=0;
 function go(route){
   if(route==='settings'&&window.SalesPilotSettings){Promise.resolve(window.SalesPilotSettings.openPage()).catch(error=>toast(error.message||'환경설정을 열지 못했습니다.'));return;}
@@ -29,34 +25,27 @@ function go(route){
   if(route==='home')show('home');else if(route==='upload')show('upload');else if(route==='sites')show('sites');else if(ROUTE_TAB[route]){S.tab=ROUTE_TAB[route];show('dash')}else show('home');
   try{if(location.hash.slice(1)!==route)history.replaceState(null,'','#'+route)}catch(_){}
 }
-$('#snav-items').addEventListener('click',e=>{if(e.target.closest('#snav-sites')){S.sitesOpen=!S.sitesOpen;try{localStorage.setItem('qd-sites-open',S.sitesOpen?'1':'0')}catch(_){}renderNav();return}const a=e.target.closest('[data-route]');if(!a)return;e.preventDefault();if(a.dataset.site!=null)S.siteSel=+a.dataset.site;go(a.dataset.route)});
+$('#snav-items').addEventListener('click',e=>{const a=e.target.closest('[data-route]');if(!a)return;e.preventDefault();go(a.dataset.route)});
 $('#snav-brand').onclick=e=>{e.preventDefault();go('home')};
-$('#snav-edit').onclick=()=>{if(window.SalesPilotSettings)go('settings');else openProfile(false);};
-$('#snav-out').onclick=()=>{if(editorDirty()){toast('먼저 저장하세요');return}try{sessionStorage.removeItem('qd-session')}catch(_){}S.authed=false;show('login')};
+$('#snav-edit').onclick=()=>openProfile();
+$('#snav-out').onclick=()=>{if(editorDirty()){toast('먼저 저장하세요');return;}if(window.SalesPilotAuth)window.SalesPilotAuth.logout();};
 window.addEventListener('hashchange',()=>{const r=location.hash.slice(1);if(S.authed&&r&&r!==curRoute())go(r)});
 const curRoute=()=>S.view==='dash'?TAB_ROUTE[S.tab]:S.view;
 const _show=show;
-show=function(v){['login','upload','home','sites'].forEach(x=>{const el=$('#view-'+x);if(el)el.hidden=v!==x});_show(v);document.body.classList.toggle('is-login',v==='login');
+show=function(v){if(v!=='login'&&(!window.SalesPilotAuth||!window.SalesPilotAuth.isAuthenticated()))v='login';['login','upload','home','sites'].forEach(x=>{const el=$('#view-'+x);if(el)el.hidden=v!==x});_show(v);document.body.classList.toggle('is-login',v==='login');
   if(v==='login')renderLogin();if(v==='home')renderHome();if(v==='upload')renderUpload();if(v==='sites')renderSites();
   if(v==='dash'){const [h,sub]=TAB_HEAD[S.tab]||TAB_HEAD.q;$('#view-dash header.app h1').textContent=h;$('#view-dash header.app .sub').textContent=sub}
   renderNav()};
 const _setTab=setTab;setTab=function(t){_setTab(t);if(S.view==='dash'){const [h,sub]=TAB_HEAD[t]||TAB_HEAD.q;$('#view-dash header.app h1').textContent=h;$('#view-dash header.app .sub').textContent=sub;renderNav()}};
 
 /* ----- 로그인 ----- */
-function renderLogin(){const p=S.me;const back=$('#lg-back'),form=$('#lg-form');
-  const known=p&&p.name&&!S.lgEdit;back.hidden=!known;$('#lg-fields').hidden=known;
-  if(known){$('#lg-av').textContent=p.name.slice(0,1);$('#lg-bnm').textContent=meNR()+' 님';$('#lg-bog').textContent=[p.org,p.phone].filter(Boolean).join(' · ')}
-  else{const v=p||{};$('#lg-name').value=v.name||'';$('#lg-rank').value=v.rank||'';$('#lg-org').value=v.org||'';$('#lg-phone').value=v.phone||'';$('#lg-email').value=v.email||''}
-  $('#lg-lead').textContent=known?'다시 오셨네요. 다음을 누르면 상담 자료 올리기로 이어집니다.':S.meLoaded===false?'정보를 불러오는 중입니다…':'처음 한 번만 입력하면 견적서·기안서의 담당자 칸에 자동으로 들어갑니다.';
-  $('#lg-err').textContent='';lgCanvas()}
-$('#lg-other').onclick=()=>{S.lgEdit=true;renderLogin();setTimeout(()=>$('#lg-name').focus(),20)};
-$('#lg-form').addEventListener('submit',async e=>{e.preventDefault();
-  if(!$('#lg-fields').hidden){const g=id=>$(id).value.trim();const name=g('#lg-name'),org=g('#lg-org'),phone=g('#lg-phone');
-    if(!name||!org||!phone){$('#lg-err').textContent=!name?'이름을 입력하세요.':!org?'소속을 입력하세요.':'연락처를 입력하세요.';return}
-    $('#pf-name').value=name;$('#pf-rank').value=g('#lg-rank');$('#pf-org').value=org;$('#pf-phone').value=phone;$('#pf-email').value=g('#lg-email');$('#pf-dept').value=(S.me&&S.me.org===org&&S.me.dept)||'';
-    await saveProfile();if(!S.me||S.me.name!==name)return}
-  S.lgEdit=false;S.authed=true;try{if($('#lg-keep').checked)sessionStorage.setItem('qd-session','1')}catch(_){}
-  go('upload')});
+function renderLogin(){
+  const view=$('#view-login');if(view)view.hidden=true;
+  if(window.SalesPilotAuth)window.SalesPilotAuth.showGate();
+  else{const conn=$('#conn');if(conn){conn.hidden=false;conn.textContent='회원 서버 미연결: PC 서버를 실행한 뒤 http://127.0.0.1:8768/ 서버 버전으로 접속하세요.';}}
+}
+$('#lg-form').addEventListener('submit',e=>{e.preventDefault();renderLogin();});
+$('#lg-other').onclick=()=>renderLogin();
 let lgRAF=0;function lgCanvas(){const cv=$('#lg-cv');if(!cv||lgRAF)return;const ctx=cv.getContext('2d');const R=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const dots=Array.from({length:46},(_,i)=>({x:Math.random(),y:Math.random(),r:8+Math.random()*46,h:[200,215,230,260,30][i%5],a:.08+Math.random()*.22,v:.00004+Math.random()*.00012}));
   const draw=t=>{if(S.view!=='login'){lgRAF=0;return}const w=cv.clientWidth,h=cv.clientHeight,dpr=Math.min(2,devicePixelRatio||1);if(cv.width!==w*dpr){cv.width=w*dpr;cv.height=h*dpr}ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -136,20 +125,30 @@ let homeSig='';setInterval(()=>{const sig=[S.quotes.size,S.contracts.size,S.disc
 const _renderMeChip=renderMeChip;renderMeChip=function(){_renderMeChip();renderNav();if(S.view==='login'&&!S.lgEdit)renderLogin()};
 
 /* ----- 시작 ----- */
-(function boot(){let ok=false;try{ok=sessionStorage.getItem('qd-session')==='1'}catch(_){}
-  S.authed=ok;if(S.meLoaded===undefined)S.meLoaded=false;
-  if(!ok){show('login');return}
-  const r=location.hash.slice(1);go(r&&(r==='home'||r==='upload'||r==='sites'||ROUTE_TAB[r])?r:'home')})();
-$('#snav-av').style.cursor='pointer';$('#snav-av').title='내 정보';$('#snav-av').onclick=()=>openProfile(false);
+function applyMemberSession(user){
+  S.authed=!!user;S.me=user||null;S.uid=user?String(user.id):null;S.meLoaded=true;
+  if(!user){[S.quotes,S.contracts,S.discounts,S.buildreqs,S.meetings,S.terms].forEach(m=>m&&m.clear());
+    S.draft=S.cdraft=S.ddraft=S.bdraft=S.vdraft=null;
+    document.querySelectorAll('#pf-modal,#xq-modal').forEach(el=>el.hidden=true);
+    if(S.siteWorkspace)S.siteWorkspace.destroy();show('login');return;}
+  const route=location.hash.slice(1);go(route&&(route==='home'||route==='upload'||route==='sites'||ROUTE_TAB[route])?route:'home');
+}
+(async function boot(){
+  S.authed=false;if(S.meLoaded===undefined)S.meLoaded=false;
+  if(!window.SalesPilotAuth){show('login');return;}
+  const user=await window.SalesPilotAuth.ready();applyMemberSession(user);
+})();
+window.addEventListener('salespilot-auth-change',event=>{const u=event.detail&&event.detail.user;
+  if(!u||!S.authed)applyMemberSession(u);else{S.me=u;S.uid=String(u.id);renderMeChip();}
+});
+$('#snav-av').style.cursor='pointer';$('#snav-av').title='내 회원정보 · 개인 저장폴더';$('#snav-av').onclick=()=>openProfile();
 let hmRT;window.addEventListener('resize',()=>{if(S.view!=='home')return;clearTimeout(hmRT);hmRT=setTimeout(renderHome,200)});
 
 /* ----- 업무사이트 ----- */
-function renderSites(){if(S.siteSel==null)S.siteSel=0;
-  $('#sites-list').innerHTML=NAV_SITES.map(([l,u,ic,sub,desc,feats,use],i)=>`<article class="site${i===S.siteSel?' on':''}" id="site-${i}">
-    <div class="site-h"><span class="ti">${svg(ic)}</span><div style="min-width:0"><h2>${esc(l)}</h2><div class="sub">${esc(sub)}</div></div></div>
-    <p>${esc(desc)}</p><ul>${feats.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
-    <div class="use"><b>이럴 때</b> ${esc(use)}</div>
-    <div class="site-a"><a class="btn pri" href="${esc(u)}" target="_blank" rel="noopener noreferrer">사이트 열기 ${svg('ext')}</a><button class="btn" type="button" data-copy="${i}">주소 복사</button><span class="url">${esc(u.replace(/^https:\/\//,'').replace(/\?.*$/,''))}</span></div></article>`).join('');
-  const el=$('#site-'+S.siteSel);if(el)el.scrollIntoView({block:'nearest'})}
-$('#sites-list').addEventListener('click',async e=>{const b=e.target.closest('[data-copy]');if(!b)return;const u=NAV_SITES[+b.dataset.copy][1];
-  try{await navigator.clipboard.writeText(u);toast('주소를 복사했습니다')}catch(_){toast('복사가 막혀 있습니다: '+u)}});
+function renderSites(){
+  if(!window.SalesPilotAuth||!window.SalesPilotAuth.isAuthenticated())return;
+  let host=$('#site-grid');if(!host){host=$('#sites-list');if(host)host.id='site-grid';}
+  if(!host)return;
+  if(!window.SalesPilotWorkspaces){host.textContent='내장 업무 작업공간 모듈을 불러오지 못했습니다.';return;}
+  S.siteWorkspace=window.SalesPilotWorkspaces.render('#site-grid',{onNavigate:go,onOpenContracts:()=>go('contracts')});
+}

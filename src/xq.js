@@ -125,7 +125,7 @@ function xlTable(d,book,m,rowsSub,opt){
 function xlInputHtml(d,book,sheet,a,inp,v,st){
   const base=`data-xa="${esc(sheet+'!'+a)}" aria-label="${esc(inp.label||a)}"`;
   if(inp.t==='num')return`<input class="xi n" inputmode="decimal" ${base} value="${v==null||v===0?'':esc(v)}">`;
-  if(inp.t==='pct')return`<input class="xi n" inputmode="decimal" ${base} ${inp.nd?'disabled title="할인 불가 품목"':''} value="${typeof v==='number'&&v?esc(+(v*100).toFixed(4)):''}" placeholder="%">`;
+  if(inp.t==='pct')return`<span class="x-percent-input" style="display:flex;align-items:center;width:100%;gap:2px"><input class="xi n" style="width:0;min-width:0;flex:1" inputmode="decimal" ${base} ${inp.nd?'disabled title="할인 불가 품목"':''} value="${typeof v==='number'&&Number.isFinite(v)?esc(+(v*100).toFixed(4)):''}"><span aria-hidden="true" style="flex:none">%</span></span>`;
   if(inp.t==='text')return`<textarea class="xi t" rows="1" ${base}>${esc(v==null?'':v)}</textarea>`;
   if(inp.t==='sel'){const opts=inp.opts||dvOptions(d,book,inp.f);const cur=v==null?'':String(v);return`<select class="xi" ${base}><option value="">—</option>${opts.map(o=>`<option${o===cur?' selected':''}>${esc(o)}</option>`).join('')}${cur&&!opts.includes(cur)?`<option selected>${esc(cur)}</option>`:''}</select>`}
   if(inp.t==='edu'||inp.t==='oneai'){return`<button class="xi pick" data-pick="${inp.t}" ${base}>${esc(v&&!/시트에서/.test(v)?v:(inp.t==='edu'?'교육비 품목 선택…':'요금제 선택…'))}</button>`}
@@ -148,7 +148,7 @@ function xlImages(d,m,rowFrom,rowTo,yOff){
 /* PDF 페이지 */
 function xlPageSplit(d,m){
   const sh=d.sheets[m.sheet];const brk=new Set((sh.brk||[]).map(Number));
-  const PW=794-60,PH=1123-70;const s=PW/m.W;const maxH=PH/s;
+  const PW=794-76,PH=1123-70;const s=PW/m.W;const maxH=PH/s;
   const blocked=new Set();m.master.forEach((v,k)=>{const r=+k.split(',')[0];m.rows.forEach(x=>{if(x.r>r&&x.r<=v.r2)blocked.add(x.r)})});
   const pages=[];let cur=[],h=0;
   const sum=a=>a.reduce((x,y)=>x+y.h,0);
@@ -208,6 +208,7 @@ function xlMaterialize(q,d,book){
       price:typeof V('I'+r)==='number'?V('I'+r):'',qty:J,unit:K,dc:typeof V('M'+r)==='number'?+(V('M'+r)*100).toFixed(2):'',free,stdOv:typeof L==='number'?L:'',amt:typeof N==='number'?N:'',note:''});
   }
   q.sections=secs.map(s=>{delete s.key;return s});
+  if(window.SalesPilotHardwareIntegration)window.SalesPilotHardwareIntegration.materialize(q);
 }
 
 /* ---------- 편집 화면 ---------- */
@@ -249,6 +250,19 @@ function xlSummaryHtml(){
   return`<div class="xsum"><span>일시납 <b>${fmt(t['일시납'])}</b></span><span>월납 <b>${fmt(t['월납'])}</b></span><span>연납 <b>${fmt(t['연납'])}</b></span><span>표준금액 대비 할인 <b>${fmt(disc)}</b> (${t.std?pct(disc/t.std):'0%'})</span><span class="hint">견적번호 ${esc(q.quoteNo||'')}</span></div>`;
 }
 function renderXBody(){
+  if(window.SalesPilotHardwareQuote&&X.d&&X.book&&S.draft){
+    let host=document.getElementById('x-hardware-upload');
+    if(!host){host=document.createElement('section');host.id='x-hardware-upload';document.getElementById('x-body').before(host);}
+    if(host.dataset.quoteId!==S.draft.id){
+      host.dataset.quoteId=S.draft.id;
+      window.SalesPilotHardwareQuote.attach(host,{quote:S.draft,template:X.d,book:X.book,assets:S.assets,
+        onDirty:()=>setDirty(true),refresh:()=>refreshX(),
+        onApply:async payload=>{
+          window.SalesPilotHardwareIntegration.apply(payload,S.draft,X.d,X.book,setXInput);
+          setDirty(true);refreshX();toast('원본에서 확인한 하드웨어 품목을 반영했습니다. 저장해 주세요.');
+        }});
+    }
+  }
   const q=S.draft,d=X.d,box=$('#x-body');
   if(X.tab==='pdf'){box.innerHTML='<div class="prev" id="x-prev" style="max-height:none"></div>';xlQuotePages(q).then(p=>showPages(finalize(p),$('#x-prev')));return}
   const sheet=X.tab==='chk'?'A10_체크리스트':q.sheet;const sh=d.sheets[sheet];

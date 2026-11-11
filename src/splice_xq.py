@@ -14,7 +14,7 @@ R("function show(view){S.view=view;$('#view-dash').hidden=view!=='dash';","funct
 R("if(S.view==='dedit')scheduleDPreview()});","if(S.view==='dedit')scheduleDPreview()});",1)
 R('.tpl-we .wnotes{border:1px solid #bbb;padding:5px 7px;font-size:7.2px;white-space:pre-line;margin-top:8px;line-height:1.5}\n','''.tpl-we .wnotes{border:1px solid #bbb;padding:5px 7px;font-size:7.2px;white-space:pre-line;margin-top:8px;line-height:1.5}
 .page.xlp{padding:0;background:#fff;overflow:hidden}
-.xlwrap{position:absolute;left:30px;top:35px;transform-origin:0 0}
+.xlwrap{position:absolute;left:38px;top:36px;transform-origin:0 0}
 .xls{border-collapse:collapse;table-layout:fixed;font-family:'Malgun Gothic','맑은 고딕','Noto Sans KR',sans-serif;font-size:11pt;color:#000;background:#fff;line-height:1.2}
 .xls td{padding:0 2px;overflow:hidden;vertical-align:bottom;white-space:nowrap}
 .xls .xv{overflow:hidden}

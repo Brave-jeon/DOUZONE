@@ -6,23 +6,68 @@
   const DOCUMENT_COLLECTIONS = new Set(['quotes', 'contracts', 'discounts', 'buildreqs', 'meetings', 'termdocs']);
   const MIME = { json: 'application/json;charset=utf-8', html: 'text/html;charset=utf-8', txt: 'text/plain;charset=utf-8', pdf: 'application/pdf', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', zip: 'application/zip' };
   const SUPPORT_MESSAGE = 'PC 폴더 저장은 최신 Chrome 또는 Edge의 HTTPS(또는 localhost) 환경에서 사용할 수 있습니다. 외부 HTTP 주소에서는 지원되지 않습니다. 일반 다운로드는 계속 사용할 수 있습니다.';
-  let dbPromise, directory = null, sequence = 0, saveQueue = Promise.resolve();
-  const previews = [];
-  const state = { supported: !!(g.isSecureContext && g.showDirectoryPicker && g.FileSystemDirectoryHandle && g.indexedDB), directoryName: '', permission: 'none', autoSave: true, pendingCount: 0, lastSaved: null, lastError: null };
-  function getStatus() {
+  let dbPromise, sequence = 0, saveQueue = Promise.resolve(), authEpoch = 0, observedOwner = null;
+  const previews = [], owners = new Map(), streams = new Set();
+  const supported = !!(g.isSecureContext && g.showDirectoryPicker && g.FileSystemDirectoryHandle && g.indexedDB);
+  function emptyState(ownerId) { return { ownerId, supported, directoryName: '', permission: 'none', autoSave: true, pendingCount: 0, lastSaved: null, lastError: null }; }
+  function normalizeId(id) {
+    if (!['string', 'number'].includes(typeof id) || !String(id).trim() || String(id).length > 500) throw fail('서버 회원 ID가 필요합니다.', 'invalid_owner');
+    return String(id);
+  }
+  function activeUser() {
+    const u = g.SalesPilotAuth && g.SalesPilotAuth.getUser && g.SalesPilotAuth.getUser();
+    return u && u.status === 'active' && u.id != null ? u : null;
+  }
+  function currentOwner() { const u = activeUser(); return u ? normalizeId(u.id) : null; }
+  function syncOwner() {
+    const id = currentOwner();
+    if (id !== observedOwner) {
+      observedOwner = id; authEpoch++;
+      for (const stream of streams) { try { Promise.resolve(stream.abort()).catch(() => {}); } catch (_) {} }
+      for (const url of previews) g.URL.revokeObjectURL(url);
+      previews.length = 0;
+    }
+    return id;
+  }
+  function requireOwner(id) {
+    if (id == null) throw fail('활성 회원으로 로그인해야 자기 폴더를 사용할 수 있습니다.', 'login_required');
+    const ownerId = normalizeId(id);
+    if (syncOwner() !== ownerId) throw fail('활성 회원으로 로그인해야 자기 폴더를 사용할 수 있습니다.', 'login_required');
+    return ownerId;
+  }
+  function context(id) {
+    id = normalizeId(id);
+    if (!owners.has(id)) owners.set(id, { ownerId: id, directory: null, state: emptyState(id), loading: null });
+    return owners.get(id);
+  }
+  function key(id) { return 'user:' + encodeURIComponent(id); }
+  function snapshot(ctx) {
+    const state = ctx ? ctx.state : emptyState(null);
     return Object.assign({}, state, { lastSaved: state.lastSaved ? Object.assign({}, state.lastSaved, { filenames: state.lastSaved.filenames.slice() }) : null });
+  }
+  function getStatus() {
+    const id = syncOwner();
+    if (!id) return snapshot(null);
+    const ctx = context(id);
+    // Avoid event/retry recursion when IndexedDB is unavailable.
+    loadOwner(ctx).catch(e => { ctx.state.lastError = errorMessage(e); });
+    return snapshot(ctx);
+  }
+  async function getStatusForUser(userId) {
+    const ctx = context(requireOwner(userId));
+    await loadOwner(ctx); requireOwner(ctx.ownerId); return snapshot(ctx);
   }
   function emit() { g.dispatchEvent(new CustomEvent('salespilot-files-change', { detail: getStatus() })); }
   function fail(message, code) { const e = new Error(message); e.code = code; return e; }
   function errorMessage(e) {
     if (e && typeof e.code === 'string') return e.message;
     if (e && e.name === 'AbortError') return '폴더 선택 또는 파일 저장을 취소했습니다. 기존 파일은 변경하지 않았습니다.';
-    if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) return '폴더 쓰기 권한이 없습니다. 폴더 저장 설정에서 ‘권한 허용’을 직접 눌러 주세요. 대기 데이터는 브라우저에 보관됩니다.';
+    if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) return '폴더 쓰기 권한이 없습니다. 회원정보에서 ‘권한 허용’을 직접 눌러 주세요. 대기 데이터는 이 회원의 브라우저 보관함에 유지됩니다.';
     if (e && e.name === 'QuotaExceededError') return '저장 공간이 부족합니다. PC와 브라우저 저장 공간을 확보한 뒤 다시 저장해 주세요.';
     if (e && e.name === 'DataCloneError') return '폴더 권한 또는 데이터를 브라우저에 보관할 수 없습니다. Chrome/Edge 저장소 설정을 확인해 주세요.';
     return 'PC 폴더에 저장하지 못했습니다. 대기 데이터와 폴더 권한·연결 상태를 확인한 뒤 다시 시도해 주세요.';
   }
-  function report(e) { state.lastError = errorMessage(e); emit(); return state.lastError; }
+  function report(e, ctx) { const message = errorMessage(e); if (ctx) ctx.state.lastError = message; emit(); return message; }
   function queue(operation) {
     const work = saveQueue.then(operation);
     saveQueue = work.catch(() => {});
@@ -54,77 +99,106 @@
       tx.onerror = tx.onabort = () => reject(tx.error || fail('브라우저 대기 저장에 실패했습니다.', 'storage_error'));
     });
   }
-  async function refreshCount() { state.pendingCount = await store('pending', 'readonly', s => s.count()); }
+  async function refreshCount(ctx) {
+    const items = await store('pending', 'readonly', s => s.getAll());
+    ctx.state.pendingCount = items.filter(item => item.ownerId === ctx.ownerId).length;
+  }
   async function validateHandle(handle) {
     if (!g.FileSystemDirectoryHandle || !(handle instanceof g.FileSystemDirectoryHandle) || handle.kind !== 'directory') throw fail('실제 브라우저 폴더 선택으로 얻은 폴더 권한이 필요합니다. 문자열 경로나 모의 핸들은 사용할 수 없습니다.', 'invalid_handle');
-    // Call the native prototype method, not a supplied object's overridden function.
     return g.FileSystemDirectoryHandle.prototype.queryPermission.call(handle, { mode: 'readwrite' });
   }
-  async function permission() {
-    if (!directory) { state.permission = 'none'; return 'none'; }
-    state.permission = await validateHandle(directory);
-    return state.permission;
-  }
-  const ready = (async () => {
-    try {
-      const prefs = await store('prefs', 'readonly', s => s.get('settings'));
-      if (prefs) { state.autoSave = prefs.autoSave !== false; state.lastSaved = prefs.lastSaved || null; }
-      const saved = await store('handles', 'readonly', s => s.get('directory'));
-      if (saved && saved.handle) {
-        state.permission = await validateHandle(saved.handle);
-        directory = saved.handle; state.directoryName = directory.name;
+  async function loadOwner(ctx) {
+    if (ctx.loading) return ctx.loading;
+    ctx.loading = (async () => {
+      // Deliberately never read/migrate/delete legacy directory/settings/pending records.
+      const prefs = await store('prefs', 'readonly', s => s.get(key(ctx.ownerId)));
+      if (prefs && prefs.ownerId === ctx.ownerId) { ctx.state.autoSave = prefs.autoSave !== false; ctx.state.lastSaved = prefs.lastSaved || null; }
+      const saved = await store('handles', 'readonly', s => s.get(key(ctx.ownerId)));
+      if (saved && saved.ownerId === ctx.ownerId && saved.handle) {
+        ctx.state.permission = await validateHandle(saved.handle);
+        ctx.directory = saved.handle; ctx.state.directoryName = saved.handle.name;
       }
-      await refreshCount(); emit();
-    } catch (e) { report(e); }
-  })();
+      await refreshCount(ctx);
+    })();
+    try { await ctx.loading; } catch (e) { ctx.loading = null; throw e; }
+  }
+  function makeJob(ctx) {
+    requireOwner(ctx.ownerId);
+    return Object.freeze({ ownerId: ctx.ownerId, handle: ctx.directory, epoch: authEpoch, ctx });
+  }
+  function checkJob(job) {
+    if (syncOwner() !== job.ownerId || authEpoch !== job.epoch) throw fail('로그아웃 또는 회원 전환으로 폴더 저장을 중단했습니다. 원래 회원의 파일은 브라우저 대기 보관함에 유지됩니다.', 'owner_changed');
+  }
+  async function permission(job) {
+    checkJob(job);
+    const value = job.handle ? await validateHandle(job.handle) : 'none';
+    checkJob(job);
+    if (job.ctx.directory === job.handle) job.ctx.state.permission = value;
+    return value;
+  }
   function requireClick() {
-    if (g.navigator.userActivation && !g.navigator.userActivation.isActive) throw fail('폴더 선택 또는 권한 허용 버튼을 직접 눌러 주세요. 자동으로 권한을 요청하지 않습니다.', 'user_activation_required');
+    if (!g.navigator.userActivation || !g.navigator.userActivation.isActive) throw fail('폴더 선택 또는 권한 허용 버튼을 직접 눌러 주세요. 자동으로 권한을 요청하지 않습니다.', 'user_activation_required');
   }
-  function configureDirectory() {
-    if (!state.supported) { report(fail(SUPPORT_MESSAGE, 'unsupported')); return Promise.resolve({ ok: false, error: state.lastError }); }
-    // Must call the picker before any await to retain the real button's user activation.
-    let picked;
-    try { requireClick(); picked = g.showDirectoryPicker({ mode: 'readwrite' }); }
-    catch (e) { report(e); return Promise.resolve({ ok: false, error: state.lastError }); }
-    return picked.then(registerDirectory).catch(e => ({ ok: false, error: report(e) }));
-  }
-  async function registerDirectory(handle) {
+  function configureDirectoryForUser(userId) {
+    let picked, ownerId, epoch;
     try {
+      ownerId = requireOwner(userId); epoch = authEpoch;
+      if (!supported) throw fail(SUPPORT_MESSAGE, 'unsupported');
+      // Picker starts synchronously in the actual user's click.
+      requireClick(); picked = g.showDirectoryPicker({ mode: 'readwrite' });
+    } catch (e) { return Promise.resolve({ ok: false, error: report(e, ownerId && context(ownerId)) }); }
+    return picked.then(handle => {
+      if (syncOwner() !== ownerId || epoch !== authEpoch) throw fail('회원이 변경되어 폴더 선택을 적용하지 않았습니다.', 'owner_changed');
+      return registerDirectoryForUser(ownerId, handle);
+    }).catch(e => ({ ok: false, error: report(e, context(ownerId)) }));
+  }
+  function configureDirectory() { const id = syncOwner(); return id ? configureDirectoryForUser(id) : Promise.resolve({ ok: false, error: report(fail('활성 회원으로 로그인한 뒤 폴더를 선택하세요.', 'login_required')) }); }
+  async function registerDirectoryForUser(userId, handle) {
+    // Explicit registration also accepts a pending ID returned by server registration.
+    // The native handle is structured-cloned ONLY into this PC's IndexedDB, never HTTP/JSON.
+    let ctx;
+    try {
+      ctx = context(userId);
+      const activeId = syncOwner();
+      if (activeId && activeId !== ctx.ownerId) throw fail('다른 회원의 폴더를 등록하거나 사용할 수 없습니다.', 'owner_mismatch');
       const granted = await validateHandle(handle);
-      await ready;
+      await loadOwner(ctx);
       return await queue(async () => {
-        // IndexedDB structured clone preserves the real FileSystemDirectoryHandle.
-        await store('handles', 'readwrite', s => s.put({ id: 'directory', handle }));
-        directory = handle; state.directoryName = handle.name; state.permission = granted; state.lastError = null;
+        await store('handles', 'readwrite', s => s.put({ id: key(ctx.ownerId), ownerId: ctx.ownerId, handle }));
+        ctx.directory = handle; ctx.state.directoryName = handle.name; ctx.state.permission = granted; ctx.state.lastError = null;
         emit();
-        if (granted === 'granted') await flushInternal();
-        else { state.lastError = '폴더를 기억했습니다. ‘권한 허용’을 직접 눌러 대기 파일을 저장해 주세요.'; emit(); }
-        return { ok: true, status: getStatus() };
+        if (syncOwner() === ctx.ownerId && granted === 'granted') await flushInternal(makeJob(ctx));
+        else if (granted !== 'granted') ctx.state.lastError = '폴더를 기억했습니다. 로그인 후 회원정보의 ‘권한 허용’을 직접 눌러 대기 파일을 저장해 주세요.';
+        emit(); return { ok: true, status: snapshot(ctx) };
       });
-    } catch (e) { return { ok: false, error: report(e) }; }
+    } catch (e) { return { ok: false, error: report(e, ctx) }; }
   }
-  function allowDirectory() {
-    let requested;
+  function registerDirectory(handle) {
+    const id = syncOwner();
+    return id ? registerDirectoryForUser(id, handle) : Promise.resolve({ ok: false, error: report(fail('활성 회원으로 로그인한 뒤 폴더를 등록하세요.', 'login_required')) });
+  }
+  function allowDirectoryForUser(userId) {
+    let requested, ctx, job;
     try {
-      requireClick();
-      if (!directory) throw fail('먼저 저장할 PC 폴더를 선택해 주세요.', 'no_directory');
-      // Never request permission during initialization, capture or flushing.
-      requested = g.FileSystemDirectoryHandle.prototype.requestPermission.call(directory, { mode: 'readwrite' });
-    } catch (e) { return Promise.resolve({ ok: false, error: report(e) }); }
+      ctx = context(requireOwner(userId)); requireClick();
+      if (!ctx.directory) throw fail('폴더 정보를 불러온 뒤 저장할 PC 폴더를 선택해 주세요.', 'no_directory');
+      job = makeJob(ctx);
+      requested = g.FileSystemDirectoryHandle.prototype.requestPermission.call(job.handle, { mode: 'readwrite' });
+    } catch (e) { return Promise.resolve({ ok: false, error: report(e, ctx) }); }
     return requested.then(value => queue(async () => {
-      state.permission = value;
-      if (value !== 'granted') { report(fail('폴더 쓰기 권한이 거부되었습니다. 대기 파일은 보관되며, ‘권한 허용’을 다시 눌러 저장할 수 있습니다.', 'permission_denied')); return { ok: false, status: getStatus() }; }
-      state.lastError = null; await flushInternal(); emit(); return { ok: true, status: getStatus() };
-    })).catch(e => ({ ok: false, error: report(e) }));
+      checkJob(job); ctx.state.permission = value;
+      if (value !== 'granted') throw fail('폴더 쓰기 권한이 거부되었습니다. 대기 파일은 보관됩니다. ‘권한 허용’을 다시 눌러 주세요.', 'permission_denied');
+      ctx.state.lastError = null; await flushInternal(job); emit(); return { ok: true, status: snapshot(ctx) };
+    })).catch(e => ({ ok: false, error: report(e, ctx) }));
   }
-  async function savePrefs() { await store('prefs', 'readwrite', s => s.put({ id: 'settings', autoSave: state.autoSave, lastSaved: state.lastSaved })); }
+  function allowDirectory() { const id = syncOwner(); return id ? allowDirectoryForUser(id) : Promise.resolve({ ok: false, error: report(fail('활성 회원으로 로그인하세요.', 'login_required')) }); }
+  async function savePrefs(ctx) { await store('prefs', 'readwrite', s => s.put({ id: key(ctx.ownerId), ownerId: ctx.ownerId, autoSave: ctx.state.autoSave, lastSaved: ctx.state.lastSaved })); }
   async function setAutoSave(value) {
-    await ready;
+    const ctx = context(requireOwner(currentOwner())); await loadOwner(ctx); const job = makeJob(ctx);
     return queue(async () => {
-      state.autoSave = !!value;
-      try { await savePrefs(); if (state.autoSave) await flushInternal(); }
-      catch (e) { report(e); }
-      emit(); return getStatus();
+      checkJob(job); ctx.state.autoSave = !!value;
+      try { await savePrefs(ctx); if (ctx.state.autoSave) await flushInternal(job); } catch (e) { report(e, ctx); }
+      emit(); return snapshot(ctx);
     });
   }
   function safeName(value) {
@@ -142,25 +216,34 @@
     const stamp = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds()) + '_' + pad(now.getMilliseconds(),3);
     return stem + '_' + stamp + '_' + (++sequence) + '_' + g.crypto.randomUUID() + ext;
   }
-  async function allocate(base, create = true) {
+  async function checkedFile(job, filename, options) {
+    checkJob(job);
+    if (!job.handle) throw fail('저장 폴더가 없습니다. 파일은 브라우저에 보관됩니다.', 'no_directory');
+    const handle = await job.handle.getFileHandle(filename, options); checkJob(job); return handle;
+  }
+  async function allocate(job, base, create = true) {
     // Check only our proposed name; never enumerate/read the user's folder.
     for (let attempt = 0; attempt < 8; attempt++) {
       const filename = uniqueName(base);
-      try { await directory.getFileHandle(filename); }
-      catch (e) { if (e.name === 'NotFoundError') return { filename, handle: create ? await directory.getFileHandle(filename, { create: true }) : null }; throw e; }
+      try { await checkedFile(job, filename); }
+      catch (e) { if (e.name === 'NotFoundError') return { filename, handle: create ? await checkedFile(job, filename, { create: true }) : null }; throw e; }
     }
     throw fail('새 파일 이름을 확보하지 못했습니다. 다시 시도해 주세요.', 'name_collision');
   }
-  async function writeNew(file, blob) {
+  async function writeNew(job, file, blob) {
     if (!file.handle) {
       // Asset resolution does not create empty placeholders. Recheck before creation.
-      try { await directory.getFileHandle(file.filename); throw fail('동일 이름의 파일이 생겼습니다. 새 이름으로 다시 시도해 주세요.', 'name_collision'); }
+      try { await checkedFile(job, file.filename); throw fail('동일 이름의 파일이 생겼습니다. 새 이름으로 다시 시도해 주세요.', 'name_collision'); }
       catch (e) { if (e.name !== 'NotFoundError') throw e; }
-      file.handle = await directory.getFileHandle(file.filename, { create: true });
+      file.handle = await checkedFile(job, file.filename, { create: true });
     }
     let stream;
-    try { stream = await file.handle.createWritable({ keepExistingData: false }); await stream.write(blob); await stream.close(); }
+    try {
+      checkJob(job); stream = await file.handle.createWritable({ keepExistingData: false }); streams.add(stream);
+      checkJob(job); await stream.write(blob); checkJob(job); await stream.close(); checkJob(job);
+    }
     catch (e) { if (stream) { try { await stream.abort(); } catch (_) {} } throw e; }
+    finally { if (stream) streams.delete(stream); }
     // No removeEntry: a failure must never delete any existing user file.
   }
   function toBlob(data, filename) {
@@ -168,22 +251,19 @@
     if (typeof data === 'string' || data instanceof g.ArrayBuffer || g.ArrayBuffer.isView(data)) return new g.Blob([data], { type: MIME[String(filename).split('.').pop().toLowerCase()] || 'application/octet-stream' });
     throw fail('내보내기 데이터는 Blob, ArrayBuffer, TypedArray 또는 문자열이어야 합니다.', 'invalid_data');
   }
-  async function author() {
-    if (!g.SalesPilotSettings || typeof g.SalesPilotSettings.getActiveUser !== 'function') return null;
-    try {
-      const value = await g.SalesPilotSettings.getActiveUser();
-      if (typeof value === 'string') return { name: value };
-      if (!value || typeof value !== 'object') return null;
-      const out = {};
-      // Never copy settings, keys, passwords or unknown user object properties.
-      for (const k of ['id', 'name', 'rank', 'org', 'dept', 'phone', 'email', 'company', 'department', 'title']) if (typeof value[k] === 'string') out[k] = value[k];
-      return Object.keys(out).length ? out : null;
-    } catch (_) { return null; }
+  function author(ownerId) {
+    const value = activeUser();
+    if (!value || normalizeId(value.id) !== ownerId) return null;
+    const out = { id: ownerId };
+    // Only safe server profile fields, not browser-selected identities/settings/credentials.
+    for (const k of ['name', 'rank', 'org', 'dept', 'phone', 'email', 'company', 'department', 'title']) if (typeof value[k] === 'string') out[k] = value[k];
+    return out;
   }
-  async function resolveAssets(data) {
+  async function resolveAssets(job, data) {
     let assets;
     const binaries = [], seen = new Map();
     async function walk(value) {
+      checkJob(job);
       if (typeof value === 'string' && value.startsWith('salespilot-asset:')) {
         const id = value.slice('salespilot-asset:'.length);
         if (seen.has(id)) return seen.get(id).filename;
@@ -194,7 +274,7 @@
         // standalone assets.get returns {id, blob, name, type, size, url}; never fetch a guessed URL.
         const blob = item instanceof g.Blob ? item : item && item.blob;
         if (!(blob instanceof g.Blob)) throw fail('첨부 파일의 실제 바이너리를 확인하지 못했습니다. 원본 문서를 대기 상태로 보관합니다.', 'asset_unavailable');
-        const file = await allocate(item.name || item.filename || ('attachment-' + id), false);
+        const file = await allocate(job, item.name || item.filename || ('attachment-' + id), false);
         binaries.push({ file, blob }); seen.set(id, file); return file.filename;
       }
       if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
@@ -209,93 +289,122 @@
     }
     return { data: await walk(data), binaries };
   }
-  async function recordSaved(filenames) {
+  async function recordSaved(job, filenames) {
+    const ctx = job.ctx, state = ctx.state;
     const previous = state.lastSaved ? state.lastSaved.filenames : [];
-    state.lastSaved = { filename: filenames[filenames.length - 1], filenames: filenames.concat(previous).slice(0, 20), savedAt: new Date().toISOString(), directoryName: directory.name };
+    state.lastSaved = { filename: filenames[filenames.length - 1], filenames: filenames.concat(previous).slice(0, 20), savedAt: new Date().toISOString(), directoryName: job.handle.name };
     state.lastError = null;
-    try { await savePrefs(); } catch (e) { report(e); }
+    try { await savePrefs(ctx); } catch (e) { report(e, ctx); }
     emit();
   }
-  async function writePending(item) {
-    if (await permission() !== 'granted') throw fail('폴더 쓰기 권한이 필요합니다. ‘권한 허용’을 직접 눌러 주세요. 파일은 대기 중입니다.', 'permission_required');
+  async function writePending(job, item) {
+    checkJob(job);
+    if (item.ownerId !== job.ownerId) throw fail('다른 회원 또는 이전 브라우저 자료는 저장하지 않습니다.', 'owner_mismatch');
+    if (!job.handle) throw fail(supported ? '이 회원의 저장 폴더가 선택되지 않았습니다. 파일은 이 회원의 브라우저 보관함에 대기 중입니다. 회원정보에서 폴더 선택 버튼을 직접 눌러 주세요.' : SUPPORT_MESSAGE + ' 파일은 이 회원의 브라우저 보관함에 대기 중입니다.', 'no_directory');
+    if (await permission(job) !== 'granted') throw fail('폴더 쓰기 권한이 필요합니다. 회원정보에서 ‘권한 허용’을 직접 눌러 주세요. 파일은 이 회원의 브라우저 보관함에 대기 중입니다.', 'permission_required');
     const filenames = [];
     let blob, filename;
     if (item.kind === 'document') {
-      const resolved = await resolveAssets(item.data);
-      const envelope = { documentId: item.path.split('/').pop(), path: item.path, savedAt: item.savedAt, author: item.author, data: resolved.data };
+      const resolved = await resolveAssets(job, item.data);
+      const envelope = { ownerId: item.ownerId, documentId: item.path.split('/').pop(), path: item.path, savedAt: item.savedAt, author: item.author, data: resolved.data };
       blob = new g.Blob([JSON.stringify(envelope, null, 2)], { type: MIME.json });
-      for (const binary of resolved.binaries) { await writeNew(binary.file, binary.blob); filenames.push(binary.file.filename); }
-      const file = await allocate(item.path.replace(/\//g, '-') + '.json');
-      await writeNew(file, blob); filename = file.filename;
+      for (const binary of resolved.binaries) { await writeNew(job, binary.file, binary.blob); filenames.push(binary.file.filename); }
+      const file = await allocate(job, item.path.replace(/\//g, '-') + '.json');
+      await writeNew(job, file, blob); filename = file.filename;
     } else {
       blob = item.blob;
-      const file = await allocate(item.filename);
-      await writeNew(file, blob); filename = file.filename;
+      const file = await allocate(job, item.filename);
+      await writeNew(job, file, blob); filename = file.filename;
     }
-    filenames.push(filename);
+    checkJob(job); filenames.push(filename);
     await store('pending', 'readwrite', s => s.delete(item.id));
-    await recordSaved(filenames); await refreshCount(); emit();
+    await recordSaved(job, filenames); await refreshCount(job.ctx); emit();
     if (item.kind === 'export') {
+      checkJob(job);
       const url = g.URL.createObjectURL(blob); previews.push(url);
       if (previews.length > 20) g.URL.revokeObjectURL(previews.shift());
-      return { url, filename, directoryName: directory.name, savedToFolder: true };
+      return { url, filename, ownerId: job.ownerId, directoryName: job.handle.name, savedToFolder: true };
     }
-    return { filename, filenames, directoryName: directory.name, savedToFolder: true };
+    return { filename, filenames, ownerId: job.ownerId, directoryName: job.handle.name, savedToFolder: true };
   }
-  async function flushInternal() {
-    if (!directory || await permission() !== 'granted') { emit(); return { saved: 0, pending: state.pendingCount }; }
-    const items = await store('pending', 'readonly', s => s.getAll());
+  async function flushInternal(job) {
+    const ctx = job.ctx; checkJob(job);
+    if (!job.handle || await permission(job) !== 'granted') { emit(); return { saved: 0, pending: ctx.state.pendingCount }; }
+    const items = (await store('pending', 'readonly', s => s.getAll())).filter(item => item.ownerId === job.ownerId);
     items.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
     let saved = 0;
     for (const item of items) {
-      if (item.kind === 'document' && !state.autoSave) continue;
-      try { await writePending(item); saved++; }
-      catch (e) { report(e); if (e.name === 'NotAllowedError' || e.name === 'QuotaExceededError' || e.code === 'permission_required') break; }
+      checkJob(job);
+      if (item.kind === 'document' && !ctx.state.autoSave) continue;
+      try { await writePending(job, item); saved++; }
+      catch (e) { report(e, ctx); if (e.name === 'NotAllowedError' || e.name === 'QuotaExceededError' || ['permission_required', 'owner_changed'].includes(e.code)) break; }
     }
-    await refreshCount(); emit(); return { saved, pending: state.pendingCount };
+    await refreshCount(ctx); emit(); return { saved, pending: ctx.state.pendingCount };
   }
   async function flushPending() {
-    await ready;
-    return queue(async () => { try { return await flushInternal(); } catch (e) { return { saved: 0, pending: state.pendingCount, error: report(e) }; } });
-  }
-  async function captureDocument(path, data) {
-    // Local DB save has already succeeded. ALL export errors are contained here.
+    let ctx;
     try {
-      await ready;
+      ctx = context(requireOwner(currentOwner())); await loadOwner(ctx); const job = makeJob(ctx);
+      return await queue(async () => { try { return await flushInternal(job); } catch (e) { return { saved: 0, pending: ctx.state.pendingCount, error: report(e, ctx) }; } });
+    } catch (e) { return { saved: 0, pending: ctx ? ctx.state.pendingCount : 0, error: report(e, ctx) }; }
+  }
+  async function captureDocument(path, data, sourceOwnerId) {
+    // Caller MUST invoke only after a successful server save of its own document.
+    // Server adapter may pass its immutable request owner as argument 3 to detect late responses.
+    let ctx;
+    try {
+      const ownerId = requireOwner(sourceOwnerId == null ? currentOwner() : sourceOwnerId);
+      ctx = context(ownerId); const epoch = authEpoch;
+      const capturedAuthor = author(ownerId), capturedData = g.structuredClone(data);
       path = String(path).replace(/^\/+|\/+$/g, '');
       const parts = path.split('/');
       if (parts.length !== 2 || !parts[1] || !DOCUMENT_COLLECTIONS.has(parts[0])) return { captured: false, reason: 'excluded_collection' };
+      await loadOwner(ctx); const job = makeJob(ctx);
+      if (epoch !== job.epoch) throw fail('회원 변경으로 문서 자동보관을 중단했습니다.', 'owner_changed');
       return await queue(async () => {
-        if (!state.autoSave) return { captured: false, reason: 'auto_save_off' };
-        const item = { id: 'doc:' + path, kind: 'document', path, data: g.structuredClone(data), savedAt: new Date().toISOString(), author: await author(), order: Date.now() };
-        // One latest snapshot per document, no in-memory duplicate pending list.
-        await store('pending', 'readwrite', s => s.put(item)); await refreshCount(); emit();
-        if (directory && await permission() === 'granted') {
-          try { return { captured: true, result: await writePending(item) }; }
-          catch (e) { return { captured: true, pending: true, error: report(e) }; }
-        }
-        return { captured: true, pending: true };
+        checkJob(job);
+        if (!ctx.state.autoSave) return { captured: false, reason: 'auto_save_off' };
+        const item = { id: key(ownerId) + ':doc:' + path, ownerId, kind: 'document', path, data: capturedData, savedAt: new Date().toISOString(), author: capturedAuthor, order: Date.now() };
+        await store('pending', 'readwrite', s => s.put(item)); await refreshCount(ctx); emit();
+        try {
+          if (job.handle && await permission(job) === 'granted') return { captured: true, result: await writePending(job, item) };
+          ctx.state.lastError = '문서는 이 회원의 브라우저에 대기 보관되었습니다. 회원정보에서 저장 폴더를 선택하거나 권한을 직접 허용하세요.'; emit();
+          return { captured: true, pending: true, ownerId, error: ctx.state.lastError };
+        } catch (e) { return { captured: true, pending: true, error: report(e, ctx) }; }
       });
-    } catch (e) { return { captured: false, error: report(e) }; }
+    } catch (e) { return { captured: false, error: report(e, ctx) }; }
   }
   async function saveExport(input) {
-    await ready;
-    if (!state.supported || !directory) {
-      state.lastError = !state.supported ? SUPPORT_MESSAGE : '저장 폴더가 선택되지 않아 일반 다운로드를 사용합니다. PC 폴더에 저장하려면 폴더 선택 버튼을 눌러 주세요.';
-      emit(); return { handled: false };
+    let ctx;
+    try {
+      const ownerId = requireOwner(currentOwner()); ctx = context(ownerId); const epoch = authEpoch;
+      if (!input || input.data == null) throw fail('내보낼 파일 데이터가 없습니다.', 'invalid_data');
+      const filename = safeName(input.filename || 'SalesPilot');
+      const item = { id: key(ownerId) + ':export:' + g.crypto.randomUUID(), ownerId, kind: 'export', filename, blob: toBlob(input.data, filename), order: Date.now() };
+      await loadOwner(ctx); const job = makeJob(ctx);
+      if (epoch !== job.epoch) throw fail('회원 변경으로 내보내기를 중단했습니다.', 'owner_changed');
+      return await queue(async () => {
+        checkJob(job);
+        await store('pending', 'readwrite', s => s.put(item)); await refreshCount(ctx); emit();
+        try { return { handled: true, result: await writePending(job, item) }; }
+        catch (e) { return { handled: true, pending: true, result: null, ownerId, error: report(e, ctx) }; }
+      });
+    } catch (e) {
+      // handled:true deliberately blocks standalone's unauthenticated download fallback.
+      return { handled: true, pending: false, result: null, error: report(e, ctx) };
     }
-    return queue(async () => {
-      try {
-        if (!input || input.data == null) throw fail('내보낼 파일 데이터가 없습니다.', 'invalid_data');
-        const filename = safeName(input.filename || 'SalesPilot');
-        const item = { id: 'export:' + g.crypto.randomUUID(), kind: 'export', filename, blob: toBlob(input.data, filename), order: Date.now() };
-        await store('pending', 'readwrite', s => s.put(item)); await refreshCount(); emit();
-        try { return { handled: true, result: await writePending(item) }; }
-        catch (e) { return { handled: true, pending: true, result: null, error: report(e) }; }
-      } catch (e) { return { handled: true, pending: false, result: null, error: report(e) }; }
-    });
   }
-  g.SalesPilotFiles = Object.freeze({ configureDirectory, registerDirectory, allowDirectory, getStatus, setAutoSave, flushPending, captureDocument, saveExport });
-  // Existing granted permission may flush in background; prompt/denied never does.
-  ready.then(() => { if (directory && state.permission === 'granted') flushPending(); });
+  g.SalesPilotFiles = Object.freeze({ configureDirectoryForUser, registerDirectoryForUser, allowDirectoryForUser, getStatusForUser, configureDirectory, registerDirectory, allowDirectory, getStatus, setAutoSave, flushPending, captureDocument, saveExport });
+  async function onAuthChange() {
+    const id = syncOwner(); emit();
+    if (!id) return; // No legacy or member handle loading/saving before login.
+    const epoch = authEpoch, ctx = context(id);
+    try {
+      await loadOwner(ctx);
+      if (syncOwner() !== id || epoch !== authEpoch) return;
+      emit(); if (ctx.directory && ctx.state.permission === 'granted') await flushPending();
+    } catch (e) { report(e, ctx); }
+  }
+  g.addEventListener('salespilot-auth-change', onAuthChange);
+  onAuthChange();
 })(window);

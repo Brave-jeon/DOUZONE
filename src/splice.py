@@ -102,7 +102,13 @@ appdir = Path('../app')
 appdir.mkdir(exist_ok=True)
 assert '<script>' in s, '앱 초기화 스크립트 위치 확인 필요'
 s = '<!doctype html>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' + s
-modules = ('ai-client.js', 'folder-storage.js', 'user-settings.js', 'dictation.js', 'standalone.js')
+# 인증 → 회원별 폴더 → 원격 DB → dictation/platform → 작업공간 순서. 구 로컬 회원설정 모듈은 로드하지 않습니다.
+modules = ('ai-client.js', 'member-auth.js', 'folder-storage.js', 'remote-db.js', 'dictation.js', 'standalone.js', 'desktop-handoff.js', 'workspaces.js')
+# 기존 하드웨어·교육·견적 레이아웃 추가 모듈을 유지합니다.
+modules += tuple(m for m in ('quote-numbering.js', 'quote-layout.js', 'quote-assistance.js', 'hardware-integration.js', 'hardware-quote-ui.js') if Path(m).is_file())
+s = s.replace('id="sites-list"', 'id="site-grid"')
+footer = 'CCO 공공기관본부 내부용  · Copyright © DOUZONE BIZON AX영업Unit. All rights reserved.'
+s = s.replace('<div id="measure"></div>', '<footer id="sp-copyright" style="text-align:center;padding:16px;font:12px/1.6 sans-serif">'+footer+'</footer>\n<div id="measure"></div>', 1)
 loaders = '\n'.join('<script src="./'+module+'?v=20261111-1"></script>' for module in modules)
 s = s.replace('<script>', loaders+'\n<script>', 1)
 for module in modules:
