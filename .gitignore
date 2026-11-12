@@ -1,0 +1,12 @@
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+**/*key*.txt
+**/members.json
+**/settings.json
+.env
+.env.*
+node_modules/
+backups/
+tmp/

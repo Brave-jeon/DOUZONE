@@ -1,0 +1,26 @@
+# GitHub source only. Deployment and paid resources require the owner's confirmation.
+services:
+  - type: web
+    name: salespilot-shared-login
+    runtime: docker
+    repo: https://github.com/Brave-jeon/DOUZONE
+    branch: shared-login-20261112
+    region: singapore
+    plan: 0.5c-512mb
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/status
+    autoDeployTrigger: "off"
+    disk:
+      name: salespilot-members
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_DATA_DIR
+        value: /var/data/salespilot
+      - key: PORT
+        value: '10000'
+      - key: MIGRATION_KEY
+        sync: false

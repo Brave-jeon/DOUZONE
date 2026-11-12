@@ -1,11 +1,14 @@
 'use strict';
-// Local-only server. Internet sharing requires a separately secured HTTPS deployment.
+// PC mode or same-origin HTTPS shared deployment. Member data stays outside the static app.
 const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const { DatabaseSync } = require('node:sqlite');
 const PORT = Number(process.env.PORT || 8768);
 if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('PORT 값이 올바르지 않습니다.');
+const deployment = require('./deployment-config');
+const DEPLOY = deployment.config(process.env, PORT);
+const migration = require('./member-migration');
 const APP = fs.realpathSync(`${__dirname}/../app`);
 const PROJECT = fs.realpathSync(`${__dirname}/..`);
 const configuredData = process.env.APP_DATA_DIR || `${process.env.USERPROFILE || process.env.HOME}/.oneai/workspace/salespilot-server-data`;
@@ -28,6 +31,9 @@ function inGitTree(directory) {
 }
 if (within(DATA, PROJECT) || within(DATA, APP) || inGitTree(DATA)) throw new Error('회원 데이터 폴더는 Git 프로젝트와 정적 app 밖에 있어야 합니다.');
 const KEY_FILE = `${DATA}/setup-key.txt`;
+// Only someone with access to this PC's private data folder can enroll/recover an administrator.
+const RECOVERY_FILE = `${DATA}/admin-recovery-key.txt`;
+if (!fs.existsSync(RECOVERY_FILE)) fs.writeFileSync(RECOVERY_FILE, crypto.randomBytes(32).toString('hex'), { flag: 'wx', mode: 0o600 });
 const db = new DatabaseSync(`${DATA}/members.sqlite`);
 db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -55,7 +61,7 @@ const PROFILE = ['email', 'name', 'org', 'dept', 'rank', 'phone', 'folderLabel',
 const PUBLIC = ['id', ...PROFILE, 'role', 'status'];
 const MAX_BODY = 1024 * 1024;
 const SESSION_AGE = 12 * 60 * 60 * 1000;
-const origins = new Set([`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`]);
+const origins = DEPLOY.origins;
 function fail(status, message) { const e = new Error(message); e.status = status; throw e; }
 function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function publicUser(user) { return Object.fromEntries(PUBLIC.map(k => [k, user[k]])); }
@@ -89,11 +95,11 @@ function json(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(data));
 }
-async function bodyOf(req) {
+async function bodyOf(req, maxBytes = MAX_BODY) {
   if (!(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) fail(415, 'JSON 형식으로 요청해 주세요.');
-  if (Number(req.headers['content-length']) > MAX_BODY) fail(413, '요청 크기가 너무 큽니다.');
+  if (Number(req.headers['content-length']) > maxBytes) fail(413, '요청 크기가 너무 큽니다.');
   let size = 0; const chunks = [];
-  for await (const chunk of req) { size += chunk.length; if (size > MAX_BODY) fail(413, '요청 크기가 너무 큽니다.'); chunks.push(chunk); }
+  for await (const chunk of req) { size += chunk.length; if (size > maxBytes) fail(413, '요청 크기가 너무 큽니다.'); chunks.push(chunk); }
   let value;
   try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail(400, 'JSON 입력을 확인해 주세요.'); }
   if (!object(value)) fail(400, 'JSON 객체가 필요합니다.');
@@ -123,7 +129,7 @@ function createSession(res, id) {
   const token = crypto.randomBytes(32).toString('hex');
   run('DELETE FROM sessions WHERE expires_at<=?', Date.now());
   run('INSERT INTO sessions VALUES (?,?,?)', sha(token), id, Date.now() + SESSION_AGE);
-  res.setHeader('Set-Cookie', `salespilot_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE / 1000}`);
+  res.setHeader('Set-Cookie', `salespilot_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_AGE / 1000}${DEPLOY.secure}`);
 }
 function transaction(fn) {
   db.exec('BEGIN IMMEDIATE');
@@ -148,6 +154,34 @@ async function register(req, res, body, setup) {
   if (setup) { try { fs.unlinkSync(KEY_FILE); } catch { /* Initialization remains permanently closed in DB. */ } createSession(res, id); }
   json(res, 201, { ok: true, user: publicUser(sql('SELECT * FROM users WHERE id=?', id)) });
 }
+async function recoverAdmin(req, res, body) {
+  forbid(body, [...PROFILE, 'password', 'recoveryKey']);
+  rate(`admin-recovery:${req.socket.remoteAddress}`, 5, 15 * 60000);
+  const key = typeof body.recoveryKey === 'string' ? body.recoveryKey : '';
+  if (DEPLOY.cloud && !process.env.ADMIN_RECOVERY_KEY) fail(403, '공유 서버의 관리자 복구가 설정되지 않았습니다.');
+  const expectedKey = DEPLOY.cloud ? process.env.ADMIN_RECOVERY_KEY : fs.readFileSync(RECOVERY_FILE, 'utf8').trim();
+  if (key.length !== 64 || !safeEqual(key, expectedKey)) fail(403, '관리자 보안 키 파일을 확인해 주세요.');
+  const p = profile(body, true);
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = await derive(passwordValue(body.password), salt);
+  const id = transaction(() => {
+    const old = sql('SELECT * FROM users WHERE email=?', p.email);
+    if (old && old.role !== 'master') fail(409, '이미 등록된 일반회원 이메일입니다. 다른 관리자 이메일을 사용하세요.');
+    if (old) {
+      run('UPDATE users SET salt=?,password_hash=?,status=? WHERE id=?', salt, hash, 'active', old.id);
+      run('DELETE FROM sessions WHERE user_id=?', old.id);
+    } else {
+      const newId = crypto.randomUUID();
+      run(`INSERT INTO users (id,${PROFILE.join(',')},role,status,salt,password_hash,created_at) VALUES (${Array(14).fill('?').join(',')})`, newId, ...PROFILE.map(k => p[k]), 'master', 'active', salt, hash, Date.now());
+      run("INSERT OR IGNORE INTO meta VALUES ('master_initialized','1')");
+      return newId;
+    }
+    run("INSERT OR IGNORE INTO meta VALUES ('master_initialized','1')");
+    return old.id;
+  });
+  createSession(res, id);
+  json(res, 200, { ok: true, user: publicUser(sql('SELECT * FROM users WHERE id=?', id)) });
+}
 const dummySalt = crypto.randomBytes(16).toString('hex');
 async function login(req, res, body) {
   forbid(body, ['email', 'password']);
@@ -158,7 +192,12 @@ async function login(req, res, body) {
   const user = sql('SELECT * FROM users WHERE email=?', p.email);
   const hash = await derive(body.password, user ? user.salt : dummySalt);
   if (!user || !safeEqual(hash, user.password_hash) || user.status !== 'active') fail(401, '이메일, 비밀번호 또는 회원 승인 상태를 확인해 주세요.');
-  createSession(res, user.id); json(res, 200, { ok: true, user: publicUser(user) });
+  const latest = transaction(() => {
+    const fresh = sql('SELECT * FROM users WHERE id=?', user.id);
+    if (!fresh || fresh.status !== 'active' || fresh.salt !== user.salt || !safeEqual(fresh.password_hash, user.password_hash)) fail(401, '계정 정보가 변경됐습니다. 현재 비밀번호로 다시 로그인하세요.');
+    createSession(res, fresh.id); return fresh;
+  });
+  json(res, 200, { ok: true, user: publicUser(latest) });
 }
 function updateUser(actor, targetId, body, admin) {
   forbid(body, [...PROFILE, ...(admin ? ['role', 'status'] : [])]);
@@ -222,21 +261,31 @@ function documentRoute(req, res, url, body) {
 }
 async function api(req, res, url) {
   const method = req.method;
+  if (url.pathname === '/api/bootstrap/import' && method === 'POST') {
+    if (!DEPLOY.cloud) fail(403, '계정 이전은 공유 서버에서만 처리됩니다.');
+    rate(`migration:${req.socket.remoteAddress}`, 5, 15 * 60000);
+    if (!origins.has(req.headers.origin)) fail(403, '허용된 공유 서버 주소가 필요합니다.');
+    migration.verifyKey(req.headers['x-salespilot-migration-key'], process.env.MIGRATION_KEY);
+    const imported = migration.importTables(db, await bodyOf(req, 16 * 1024 * 1024));
+    return json(res, 200, imported);
+  }
+  if (DEPLOY.cloud && !initialized() && ['/api/setup', '/api/register', '/api/admin-recovery'].includes(url.pathname)) fail(409, '기존 PC 계정 이전을 먼저 완료해 주세요.');
   let body = {};
   if (!['GET', 'HEAD'].includes(method)) {
     if (!origins.has(req.headers.origin)) fail(403, '허용된 서버 화면에서 요청해 주세요.');
     rate(`write:${req.socket.remoteAddress}`, 120, 60000);
-    if (['/api/login', '/api/setup', '/api/register'].includes(url.pathname)) rate(`auth:${req.socket.remoteAddress}`, 30, 15 * 60000);
+    if (['/api/login', '/api/setup', '/api/register', '/api/admin-recovery'].includes(url.pathname)) rate(`auth:${req.socket.remoteAddress}`, 30, 15 * 60000);
     if (method !== 'DELETE' && url.pathname !== '/api/logout') body = await bodyOf(req);
   }
   const route = `${method} ${url.pathname}`;
-  if (route === 'GET /api/status') return json(res, 200, { ok: true, needsMaster: !initialized() });
+  if (route === 'GET /api/status') return json(res, 200, { ok: true, needsMaster: !initialized(), adminRecovery: !DEPLOY.cloud || Boolean(process.env.ADMIN_RECOVERY_KEY), sharedService: DEPLOY.cloud, needsImport: DEPLOY.cloud && !initialized() });
+  if (route === 'POST /api/admin-recovery') return recoverAdmin(req, res, body);
   if (route === 'POST /api/setup') return register(req, res, body, true);
   if (route === 'POST /api/register') return register(req, res, body, false);
   if (route === 'POST /api/login') return login(req, res, body);
   if (route === 'POST /api/logout') {
     const token = cookieToken(req); if (token) run('DELETE FROM sessions WHERE token_hash=?', sha(token));
-    res.setHeader('Set-Cookie', 'salespilot_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+    res.setHeader('Set-Cookie', 'salespilot_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0' + DEPLOY.secure);
     return json(res, 200, { ok: true });
   }
   if (route === 'GET /api/me') return json(res, 200, { ok: true, user: publicUser(authenticated(req)) });
@@ -276,8 +325,9 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'same-origin');
   try {
-    if (!origins.has(`http://${req.headers.host}`)) fail(403, '허용되지 않은 서버 주소입니다.');
-    const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
+    const url = new URL(req.url, DEPLOY.base);
+    if (!deployment.checkRequest(req, url, DEPLOY)) fail(403, '허용된 HTTPS 공유 서버 또는 PC 서버 주소로 접속하세요.');
+    if (DEPLOY.cloud) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
     if (url.pathname.startsWith('/api/')) await api(req, res, url); else staticFile(req, res, url);
   } catch (error) {
     if (res.headersSent || res.destroyed) return;
@@ -290,11 +340,12 @@ server.headersTimeout = 15000;
 server.keepAliveTimeout = 5000;
 server.maxHeadersCount = 100;
 server.on('error', () => { console.error('서버를 시작할 수 없습니다. 포트와 데이터 폴더 권한을 확인해 주세요.'); process.exitCode = 1; });
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`SalesPilot: http://127.0.0.1:${PORT}`);
+server.listen(PORT, DEPLOY.host, () => {
+  console.log(`SalesPilot: ${DEPLOY.base}`);
   console.log(`회원 데이터 폴더: ${DATA}`);
+  console.log(`관리자 등록·복구 보안 키 파일: ${RECOVERY_FILE}`);
   if (!initialized()) console.log(`최초 마스터 설정 키 파일: ${KEY_FILE}`);
-  console.log('인터넷 공동 회원가입에는 별도 HTTPS 호스팅이 필요합니다.');
+  console.log(DEPLOY.cloud ? 'HTTPS 공유 서버: 기존 PC 계정 이전 후 같은 계정으로 접속합니다.' : 'PC 서버입니다. 인터넷 공동 사용에는 HTTPS 공유 서버 배포가 필요합니다.');
 });
 function shutdown() { server.close(() => { db.close(); process.exit(0); }); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);

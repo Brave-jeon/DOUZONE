@@ -2,7 +2,7 @@
 (function (g) {
   'use strict';
   const FIELDS = [['name','이름'], ['email','이메일'], ['rank','직급'], ['org','소속'], ['dept','부서'], ['phone','연락처']];
-  let currentUser = null, initialization, gate, page, connected = false, needsMaster = false, adminRows = [], editingId = null;
+  let currentUser = null, initialization, gate, page, connected = false, needsMaster = false, adminRows = [], editingId = null, adminRecovery = false, sharedService = false, needsImport = false;
   const chosen = { register: null, setup: null, profile: null };
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
@@ -96,7 +96,7 @@
   function ensureGate() {
     if (gate) return;
     mountStyle(); gate = document.createElement('section'); gate.id = 'sp-auth-gate'; gate.setAttribute('role','dialog'); gate.setAttribute('aria-modal','true'); gate.setAttribute('aria-labelledby','sp-auth-title');
-    gate.innerHTML = `<div class="sp-auth-card"><h1 id="sp-auth-title">회원 로그인</h1><p>서버에 등록된 활성 회원만 업무 화면을 사용할 수 있습니다.</p><div id="sp-auth-server-note" class="sp-auth-note" hidden>회원 서버 미연결: 현재 화면에서는 회원가입이나 로그인이 처리되지 않습니다. PC 서버를 실행한 뒤 <a href="http://127.0.0.1:8768/">PC 서버 버전 열기</a>로 접속하세요.</div><p class="sp-auth-note">기본 PC 서버는 이 PC에서만 사용합니다. 인터넷 공동 회원가입에는 별도 HTTPS 호스팅이 필요합니다.</p><div class="sp-auth-actions" role="tablist" aria-label="회원 접속"><button id="sp-auth-tab-login" type="button" role="tab" aria-controls="sp-auth-panel-login" aria-selected="true">로그인</button><button id="sp-auth-tab-register" type="button" role="tab" aria-controls="sp-auth-panel-register" aria-selected="false">회원가입</button><button id="sp-auth-tab-setup" type="button" role="tab" aria-controls="sp-auth-panel-setup" aria-selected="false" hidden>처음 마스터 초기화</button></div><div id="sp-auth-message" class="sp-auth-message" role="status" aria-live="polite"></div><section id="sp-auth-panel-login" role="tabpanel" aria-labelledby="sp-auth-tab-login"><form id="sp-auth-login-form"><label for="sp-auth-login-email">이메일<input id="sp-auth-login-email" type="email" required maxlength="300" autocomplete="username"></label><label for="sp-auth-login-password">암호<input id="sp-auth-login-password" type="password" required maxlength="256" autocomplete="current-password"></label><div class="sp-auth-actions"><button id="sp-auth-login-submit" class="sp-primary" type="submit">로그인</button><button id="sp-auth-retry" type="button">서버 연결 다시 확인</button></div></form><p>가입 후에는 마스터의 승인이 필요합니다. 승인대기 또는 비활성 회원은 로그인할 수 없습니다.</p></section><section id="sp-auth-panel-register" role="tabpanel" aria-labelledby="sp-auth-tab-register" hidden><h2>일반 회원가입</h2><p>가입 계정은 일반회원으로 승인대기 상태가 됩니다. 첫 가입자도 자동으로 마스터가 되지 않습니다.</p><form id="sp-auth-register-form"><div class="sp-auth-grid">${fields('sp-auth-register',true)}</div>${folderFields('sp-auth-register')}<div class="sp-auth-actions"><button id="sp-auth-register-submit" class="sp-primary" type="submit">승인대기 회원가입</button></div></form></section><section id="sp-auth-panel-setup" role="tabpanel" aria-labelledby="sp-auth-tab-setup" hidden><h2>처음 마스터 초기화</h2><p class="sp-auth-note">서버 데이터 폴더의 setup-key.txt 파일을 직접 선택하세요. 키는 초기화 요청에만 사용하며 화면·브라우저 저장소에 보관하지 않습니다. 마스터가 이미 있으면 서버가 초기화를 거절합니다.</p><form id="sp-auth-setup-form"><label for="sp-auth-setup-file">초기화 키 파일<input id="sp-auth-setup-file" type="file" accept=".txt,text/plain" required></label><div class="sp-auth-grid">${fields('sp-auth-setup',true)}</div>${folderFields('sp-auth-setup')}<div class="sp-auth-actions"><button id="sp-auth-setup-submit" class="sp-primary" type="submit">마스터 초기화</button></div></form></section></div>`;
+    gate.innerHTML = `<div class="sp-auth-card"><h1 id="sp-auth-title">회원 로그인</h1><p>서버에 등록된 활성 회원만 업무 화면을 사용할 수 있습니다.</p><div id="sp-auth-server-note" class="sp-auth-note" hidden>이 공개 화면에는 회원 서버가 없어 로그인·계정 등록을 할 수 없습니다. PC 서버를 실행한 뒤 <a href="http://127.0.0.1:8768/#admin-register">관리자 계정 등록 화면 열기</a>로 이동하세요. 인터넷 공동 사용에는 별도 회원 서버 배포가 필요합니다.</div><p class="sp-auth-note">인터넷 공유 서버에서는 이전한 PC 계정으로 로그인합니다. 계정과 자료는 공통 회원 서버에 저장됩니다. PC 전용 서버와는 자동 동기화되지 않으므로 공유 주소를 사용하세요.</p><div class="sp-auth-actions" role="tablist" aria-label="회원 접속"><button id="sp-auth-tab-login" type="button" role="tab" aria-controls="sp-auth-panel-login" aria-selected="true">로그인</button><button id="sp-auth-tab-register" type="button" role="tab" aria-controls="sp-auth-panel-register" aria-selected="false">회원가입</button><button id="sp-auth-tab-setup" type="button" role="tab" aria-controls="sp-auth-panel-setup" aria-selected="false">관리자 계정 등록·복구</button></div><div id="sp-auth-message" class="sp-auth-message" role="status" aria-live="polite"></div><section id="sp-auth-panel-login" role="tabpanel" aria-labelledby="sp-auth-tab-login"><form id="sp-auth-login-form"><label for="sp-auth-login-email">이메일<input id="sp-auth-login-email" type="email" required maxlength="300" autocomplete="username"></label><label for="sp-auth-login-password">암호<input id="sp-auth-login-password" type="password" required maxlength="256" autocomplete="current-password"></label><div class="sp-auth-actions"><button id="sp-auth-login-submit" class="sp-primary" type="submit">로그인</button><button id="sp-auth-retry" type="button">서버 연결 다시 확인</button></div></form><p>가입 후에는 마스터의 승인이 필요합니다. 승인대기 또는 비활성 회원은 로그인할 수 없습니다.</p></section><section id="sp-auth-panel-register" role="tabpanel" aria-labelledby="sp-auth-tab-register" hidden><h2>일반 회원가입</h2><p>가입 계정은 일반회원으로 승인대기 상태가 됩니다. 첫 가입자도 자동으로 마스터가 되지 않습니다.</p><form id="sp-auth-register-form"><div class="sp-auth-grid">${fields('sp-auth-register',true)}</div>${folderFields('sp-auth-register')}<div class="sp-auth-actions"><button id="sp-auth-register-submit" class="sp-primary" type="submit">승인대기 회원가입</button></div></form></section><section id="sp-auth-panel-setup" role="tabpanel" aria-labelledby="sp-auth-tab-setup" hidden><h2>관리자 계정 등록·복구</h2><p class="sp-auth-note">이 기능은 PC 서버 화면에서 사용합니다. 회원 데이터 폴더의 admin-recovery-key.txt 파일을 선택하고 이름·이메일·비밀번호(10자 이상)를 입력하세요. 새 이메일은 활성 관리자로 등록됩니다. 기존 관리자 이메일은 비밀번호만 재설정하며 기존 자료를 유지합니다. 키 파일은 다른 사람에게 공유하지 마세요. 키 내용은 화면이나 브라우저 저장소에 보관하지 않습니다.</p><p>키 파일 위치: C:\\Users\\user\\.oneai\\workspace\\salespilot-server-data\\admin-recovery-key.txt</p><p><a href="http://127.0.0.1:8768/#admin-register">PC용 관리자 등록 화면 열기</a></p><form id="sp-auth-setup-form"><label for="sp-auth-setup-file">관리자 보안 키 파일<input id="sp-auth-setup-file" type="file" accept=".txt,text/plain" required></label><div class="sp-auth-grid">${fields('sp-auth-setup',true)}</div>${folderFields('sp-auth-setup')}<div class="sp-auth-actions"><button id="sp-auth-setup-submit" class="sp-primary" type="submit">관리자 등록·복구 후 로그인</button></div></form></section></div>`;
     document.body.append(gate);
     ['login','register','setup'].forEach(kind => { $('sp-auth-tab-'+kind).onclick = () => selectGateTab(kind); $('sp-auth-'+kind+'-form').onsubmit = e => submitGate(e, kind); });
     ['register','setup'].forEach(kind => { $('sp-auth-'+kind+'-folder-select').onclick = () => chooseFolder(kind, 'sp-auth-'+kind, 'sp-auth-message'); });
@@ -110,7 +110,7 @@
     });
   }
   function selectGateTab(kind) {
-    if (kind === 'setup' && !needsMaster) return;
+    if (kind === 'setup' && connected && !needsMaster && !adminRecovery) return;
     ['login','register','setup'].forEach(key => { $('sp-auth-panel-'+key).hidden = key !== kind; $('sp-auth-tab-'+key).setAttribute('aria-selected',String(key === kind)); });
   }
   function showGate() {
@@ -118,19 +118,20 @@
     ensureGate(); gate.hidden = false;
     if (page && page.open) page.close();
     $('sp-auth-server-note').hidden = connected;
-    $('sp-auth-tab-setup').hidden = !connected || !needsMaster;
-    ['login','register','setup'].forEach(k => { $('sp-auth-'+k+'-submit').disabled = !connected; });
+    $('sp-auth-tab-setup').hidden = sharedService && !adminRecovery;
+    ['login','register','setup'].forEach(k => { $('sp-auth-'+k+'-submit').disabled = !connected || needsImport; });
     if (!needsMaster) selectGateTab('login');
   }
   async function checkSession() {
     try {
       const status = await request('/api/status');
       if (typeof status.needsMaster !== 'boolean') throw failure('회원 서버 상태 응답이 올바르지 않습니다.',0,'offline');
-      connected = true; needsMaster = status.needsMaster;
+      connected = true; needsMaster = status.needsMaster; adminRecovery = status.adminRecovery === true; sharedService = status.sharedService === true; needsImport = status.needsImport === true;
       try { const me = await request('/api/me'); if (!validUser(me.user)) throw failure('회원 정보 응답이 올바르지 않습니다.'); setUser(me.user); }
       catch (e) { if (e.status !== 401) throw e; setUser(null); }
-      if (isAuthenticated()) { if (gate) gate.hidden = true; }
-      else { showGate(); message('sp-auth-message',needsMaster ? '아직 마스터가 없습니다. 서버의 초기화 키 파일로 마스터를 먼저 초기화하세요.' : '이메일과 암호로 로그인하세요.'); }
+      const adminRequested = new URLSearchParams(g.location.search).get('admin') === 'register' || g.location.hash === '#admin-register';
+      if (isAuthenticated() && !adminRequested) { if (gate) gate.hidden = true; }
+      else { showGate(); if (!needsImport && (adminRequested || needsMaster)) selectGateTab('setup'); message('sp-auth-message',needsImport ? '공유 서버의 기존 계정 이전이 아직 완료되지 않았습니다. PC에서 계정이전_실행.cmd를 실행한 뒤 다시 확인하세요. 새 계정을 만들 필요는 없습니다.' : sharedService ? '공유 서버입니다. 이전한 PC 계정의 이메일과 기존 비밀번호로 로그인하세요.' : needsMaster ? '관리자 계정 등록·복구에서 본인 계정을 먼저 등록하세요.' : '이메일과 비밀번호로 로그인하세요. 관리자 계정이 없거나 비밀번호를 잊었다면 관리자 계정 등록·복구를 선택하세요.'); }
     } catch (e) { setUser(null); connected = false; needsMaster = false; showGate(); message('sp-auth-message',e.message,true); }
     return getUser();
   }
@@ -150,16 +151,18 @@
     const prefix = 'sp-auth-'+kind; let payload, key = '';
     try {
       if (!connected) throw failure('회원 서버 미연결 상태에서는 가입이나 로그인을 처리할 수 없습니다.');
+      if (needsImport) throw failure('PC의 기존 계정 이전을 먼저 완료해 주세요. 새 계정 등록은 필요하지 않습니다.');
       if (kind === 'login') payload = {email:$(prefix+'-email').value.trim(), password:$(prefix+'-password').value};
       else {
         payload = Object.assign(readProfile(prefix),folderProfile(prefix,kind),{password:$(prefix+'-password').value});
         if (kind === 'setup') {
           const file = $('sp-auth-setup-file').files[0];
-          if (!file || file.name !== 'setup-key.txt' || file.size > 4096) throw failure('서버가 생성한 setup-key.txt 파일을 선택하세요.');
-          key = (await file.text()).trim(); if (!key) throw failure('초기화 키 파일이 비어 있습니다.'); payload.setupKey = key;
+          const expected = adminRecovery ? 'admin-recovery-key.txt' : 'setup-key.txt';
+          if (!file || file.name !== expected || file.size > 4096) throw failure('서버가 생성한 '+expected+' 파일을 선택하세요.');
+          key = (await file.text()).trim(); if (!key) throw failure('보안 키 파일이 비어 있습니다.'); payload[adminRecovery ? 'recoveryKey' : 'setupKey'] = key;
         }
       }
-      const result = await request('/api/'+(kind==='register'?'register':kind==='setup'?'setup':'login'),{method:'POST',body:payload});
+      const result = await request('/api/'+(kind==='register'?'register':kind==='setup'?(adminRecovery?'admin-recovery':'setup'):'login'),{method:'POST',body:payload});
       $(prefix+'-password').value = '';
       if (kind === 'setup') $('sp-auth-setup-file').value = '';
       if (!validUser(result.user)) throw failure('회원 응답을 확인할 수 없습니다. 다시 로그인하여 상태를 확인하세요.');
@@ -176,7 +179,7 @@
       // 서버 세션 쿠키만 유지합니다. 앱 상태/사용자 SDK는 새로 시작합니다.
       g.location.reload();
     } catch (e) { if (e.code === 'offline') { connected = false; $('sp-auth-server-note').hidden = false; } message('sp-auth-message',e.message,true); }
-    finally { if (payload) { delete payload.password; delete payload.setupKey; } key = ''; $(prefix+'-password').value = ''; if (kind === 'setup') $('sp-auth-setup-file').value = ''; button.disabled = !connected; }
+    finally { if (payload) { delete payload.password; delete payload.setupKey; delete payload.recoveryKey; } key = ''; $(prefix+'-password').value = ''; if (kind === 'setup') $('sp-auth-setup-file').value = ''; button.disabled = !connected || needsImport; }
   }
   function ensurePage() {
     if (page) return; mountStyle(); page = document.createElement('dialog'); page.id = 'sp-member-page'; page.setAttribute('aria-labelledby','sp-member-title');

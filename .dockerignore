@@ -1,0 +1,15 @@
+**/.git
+**/.ghpages-tmp
+**/node_modules
+**/*.sqlite
+**/*.sqlite-*
+**/*key.txt
+**/members.json
+**/settings.json
+**/backups
+**/tmp
+**/.env
+**/.env.*
+tools
+*.cmd
+*.md

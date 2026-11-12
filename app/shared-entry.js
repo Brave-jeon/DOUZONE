@@ -1,0 +1,2 @@
+/* A GitHub Pages entry and PC entry navigate to one HTTPS origin; cookies never cross origins. */
+(function(g){'use strict';const value=g.SalesPilotSharedServer&&g.SalesPilotSharedServer.url;if(!value)return;let target;try{target=new URL(value);if(target.protocol!=='https:'||target.username||target.password||target.pathname!=='/'||target.search||target.hash)throw new Error('공유 서버 주소 형식이 올바르지 않습니다.');}catch(e){console.error('공유 로그인 연결 설정을 확인하세요.');return;}if(g.location.origin!==target.origin)g.location.replace(target.origin+'/');})(window);
