@@ -1,0 +1,8 @@
+{
+  "name": "salespilot-free-shared-login",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node server/server.js" },
+  "engines": { "node": ">=24" },
+  "dependencies": { "@supabase/supabase-js": "^2.0.0" }
+}

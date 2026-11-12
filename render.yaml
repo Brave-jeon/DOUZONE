@@ -1,26 +1,28 @@
-# GitHub source only. Deployment and paid resources require the owner's confirmation.
+# Free compute only. No paid disk. Encrypted account state uses Supabase Free PostgreSQL.
 services:
   - type: web
-    name: salespilot-shared-login
+    name: salespilot-free-shared-login
     runtime: docker
     repo: https://github.com/Brave-jeon/DOUZONE
-    branch: shared-login-20261112
+    branch: shared-login-free-20261112
     region: singapore
-    plan: 0.5c-512mb
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/status
     autoDeployTrigger: "off"
-    disk:
-      name: salespilot-members
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: APP_DATA_DIR
-        value: /var/data/salespilot
+        value: /tmp/salespilot
       - key: PORT
         value: '10000'
       - key: MIGRATION_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STORE_ENCRYPTION_KEY
         sync: false

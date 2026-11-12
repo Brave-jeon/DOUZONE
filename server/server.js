@@ -13,7 +13,9 @@ const APP = fs.realpathSync(`${__dirname}/../app`);
 const PROJECT = fs.realpathSync(`${__dirname}/..`);
 const configuredData = process.env.APP_DATA_DIR || `${process.env.USERPROFILE || process.env.HOME}/.oneai/workspace/salespilot-server-data`;
 fs.mkdirSync(configuredData, { recursive: true, mode: 0o700 });
-const DATA = fs.realpathSync(configuredData);
+const DATA_BASE = fs.realpathSync(configuredData);
+async function start() {
+const DATA = DEPLOY.cloud ? fs.mkdtempSync(`${DATA_BASE}/boot-`) : DATA_BASE;
 function within(child, parent) {
   const c = child.replace(/\\/g, '/').toLowerCase();
   const p = parent.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
@@ -30,6 +32,8 @@ function inGitTree(directory) {
   return false;
 }
 if (within(DATA, PROJECT) || within(DATA, APP) || inGitTree(DATA)) throw new Error('회원 데이터 폴더는 Git 프로젝트와 정적 app 밖에 있어야 합니다.');
+const durable = require('./durable-store').create(process.env, DATA, DEPLOY);
+await durable.restore();
 const KEY_FILE = `${DATA}/setup-key.txt`;
 // Only someone with access to this PC's private data folder can enroll/recover an administrator.
 const RECOVERY_FILE = `${DATA}/admin-recovery-key.txt`;
@@ -328,7 +332,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, DEPLOY.base);
     if (!deployment.checkRequest(req, url, DEPLOY)) fail(403, '허용된 HTTPS 공유 서버 또는 PC 서버 주소로 접속하세요.');
     if (DEPLOY.cloud) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
-    if (url.pathname.startsWith('/api/')) await api(req, res, url); else staticFile(req, res, url);
+    if (url.pathname.startsWith('/api/')) await durable.dispatch(db, req, res, () => api(req, res, url)); else staticFile(req, res, url);
   } catch (error) {
     if (res.headersSent || res.destroyed) return;
     const status = error.status || (error instanceof URIError ? 400 : 500);
@@ -349,3 +353,5 @@ server.listen(PORT, DEPLOY.host, () => {
 });
 function shutdown() { server.close(() => { db.close(); process.exit(0); }); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
+}
+start().catch(() => { console.error('무료 공유 서버를 시작하지 못했습니다. 무료 저장소 연결과 암호화 키 설정을 확인하세요.'); process.exitCode = 1; });
