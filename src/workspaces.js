@@ -7,7 +7,35 @@
     { kind: 'administrative', title: '행정사례', detail: '사용자가 제공한 행정사례 자료의 비교·근거 정리를 요청하는 내장 작업공간입니다. 외부 행정사례 데이터베이스에 연결되지 않습니다.' },
     { kind: 'public-sales', title: '공공영업', detail: '사용자가 제공한 공공영업 자료로 전략 검토를 요청하는 내장 작업공간입니다. 외부 영업 코치·조직·계정 관리 서비스에 연결되지 않습니다.' }
   ];
+  const EXTERNAL_SITES = [
+    { title: '계약서 초안 생성기', url: 'https://pray2god4u.github.io/contract-generator/', detail: '별도 약정서·합의서 등 계약서 초안 작성 사이트입니다.' },
+    { title: '기술문서 인텔리전스', url: 'https://pray2god4u.github.io/mfg-tech-copilot/search.html', detail: '제조 고객 상담에 필요한 기술문서 검색 사이트입니다.' },
+    { title: '행정사례 AI', url: 'https://korea-admin-case-ai-mvp04.good4min.chatgpt.site/', detail: '공공사업 유사 사례와 기획 근거를 확인하는 사이트입니다.' },
+    { title: '공공영업 인사이트 코치', url: 'https://public-sales-insight-coach.onrender.com/', detail: '공공영업 전략·코칭 사이트입니다. 별도 로그인 또는 초대 권한이 필요할 수 있습니다.' }
+  ];
   const mounted = new WeakMap();
+  function externalLinks() {
+    const area = node('section', null, 'sp-external-sites');
+    area.setAttribute('aria-label', '업무사이트 링크');
+    area.append(node('h2', '업무사이트 바로가기'), node('p', '원래 업무사이트 4개를 새 탭으로 엽니다. 사이트별 로그인·접속 권한은 해당 서비스에서 확인하세요.', 'sp-muted'));
+    const grid = node('div', null, 'sp-external-grid');
+    EXTERNAL_SITES.forEach(site => {
+      const card = node('article', null, 'sp-external-card');
+      card.append(node('h3', site.title), node('p', site.detail, 'sp-muted'));
+      const actions = node('div', null, 'sp-actions');
+      const link = node('a', '사이트 열기 ↗', 'btn pri');
+      link.href = site.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      link.setAttribute('aria-label', site.title + ' 새 탭에서 열기');
+      const feedback = node('span', '', 'sp-muted'); feedback.setAttribute('aria-live', 'polite');
+      const copy = button('주소 복사', async () => {
+        try { await navigator.clipboard.writeText(site.url); feedback.textContent = '주소를 복사했습니다.'; }
+        catch (_) { feedback.textContent = '아래 주소를 직접 선택해 복사하세요.'; }
+      });
+      const address = node('p', site.url, 'sp-muted sp-site-address');
+      actions.append(link, copy); card.append(actions, address, feedback); grid.append(card);
+    });
+    area.append(grid); return area;
+  }
   const CSS = '.sp-workspaces{width:100%;min-width:0;color:var(--text,#17243b)}.sp-workspaces .sp-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}.sp-workspaces .sp-tabs button[aria-selected="true"]{background:var(--pri,#2459d3);color:#fff}.sp-workspaces .sp-panel{background:var(--panel,#fff);border:1px solid var(--line,#dce3ee);border-radius:14px;padding:24px}.sp-workspaces h2{margin:0 0 8px}.sp-workspaces p,.sp-workspaces li{line-height:1.65}.sp-workspaces .sp-muted{color:var(--muted,#53627b);font-size:13px}.sp-workspaces .sp-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;margin-top:20px}.sp-workspaces label.sp-field{display:flex;flex-direction:column;gap:8px;margin:16px 0;font-weight:600}.sp-workspaces textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:100px;border:1px solid var(--line,#cbd5e1);border-radius:8px;padding:12px;background:var(--panel,#fff);color:inherit;font:inherit;font-weight:400}.sp-workspaces input[type="file"]{max-width:100%;font:inherit}.sp-workspaces .sp-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0}.sp-workspaces .sp-consent{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.6}.sp-workspaces .sp-consent input{margin-top:5px;flex-shrink:0}.sp-workspaces .sp-result{white-space:pre-wrap;overflow-wrap:anywhere;max-height:560px;overflow:auto;border:1px solid var(--line,#dce3ee);border-radius:8px;padding:16px;background:var(--bg,#f8fafc);font:13px/1.65 ui-monospace,monospace}.sp-workspaces .sp-status{white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0;font-size:13px;line-height:1.65}.sp-workspaces button:focus-visible,.sp-workspaces input:focus-visible,.sp-workspaces textarea:focus-visible{outline:3px solid #508df0;outline-offset:3px}@media(max-width:800px){.sp-workspaces .sp-columns{grid-template-columns:1fr}.sp-workspaces .sp-panel{padding:16px}}';
   function node(tag, text, className) {
     const el = document.createElement(tag);
@@ -122,7 +150,8 @@
         if (next != null) { e.preventDefault(); switchTab(instance, next); instance.host.querySelectorAll('[role="tab"]')[next].focus(); }
       }); tabs.append(b);
     });
-    root.append(style, tabs, panel(SERVICES[instance.index], instance.states[instance.index], instance)); instance.host.replaceChildren(root);
+    style.textContent += '.sp-external-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin:16px 0 28px}.sp-external-card{border:1px solid var(--line,#dce3ee);border-radius:12px;padding:20px;background:var(--panel,#fff)}.sp-external-card h3{margin:0 0 10px}.sp-site-address{overflow-wrap:anywhere;user-select:text}.sp-external-card a:focus-visible{outline:3px solid #508df0;outline-offset:3px}';
+    root.append(style, externalLinks(), node('h2', '내장 분석 작업공간'), tabs, panel(SERVICES[instance.index], instance.states[instance.index], instance)); instance.host.replaceChildren(root);
   }
   function switchTab(instance, index) {
     if (instance.states.some(state => state.busy)) return;
