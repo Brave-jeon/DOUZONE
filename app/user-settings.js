@@ -204,7 +204,7 @@
       const enabled = !!status && status.supported !== false;
       ['configure','allow','flush','auto'].forEach(id => { dialog.querySelector('#sp-files-'+id).disabled = !enabled; });
       dialog.querySelector('#sp-files-auto').checked = !!(status && status.autoSave);
-      const values = status ? [['지원',status.supported?'사용 가능':'이 브라우저는 폴더 선택 미지원'],['선택 폴더',status.directoryName || '미선택 (브라우저 저장 대기)'],['권한',status.permission || '미확인'],['대기 파일',status.pendingCount == null?'미확인':String(status.pendingCount)],['최근 저장', measuredSaved(status.lastSaved)],['최근 오류', measuredSaved(status.lastError)]] : [['상태','저장폴더 기능이 아직 연결되지 않았습니다.']];
+      const values = status ? [['지원',status.supported?'사용 가능':'이 브라우저는 폴더 선택 미지원'],['선택 폴더',status.directoryName || '미선택 (브라우저 저장 대기)'],['권한',status.permission || '미확인'],['대기 파일',status.pendingCount == null?'미확인':String(status.pendingCount)],['최근 저장', measuredSaved(status.lastSaved)],['최근 오류', measuredSaved(status.lastError)],['안내',status.directoryName?'PDF·엑셀 등 저장 버튼을 누르면 선택한 폴더에 바로 저장됩니다.':'폴더를 선택하면 저장 버튼 클릭 시 그 폴더에 바로 저장됩니다. 미선택 시 파일은 브라우저 보관함에 대기합니다.']] : [['상태','저장폴더 기능이 아직 연결되지 않았습니다.']];
       dialog.querySelector('#sp-files-status').innerHTML = values.map(([key,value]) => '<dt>'+esc(key)+'</dt><dd>'+esc(value)+'</dd>').join('');
     } catch (e) { message(e.message || '저장폴더 상태를 읽지 못했습니다.', true); }
   }

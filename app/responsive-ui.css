@@ -1,0 +1,46 @@
+/* 화면 배치만 조정하며 A4 문서 지면 규격은 유지합니다. */
+html,body{max-width:100%;}body{overflow-x:hidden}.main,.ed-grid,.ed-form,.ed-prev,.sp-external-card{min-width:0}
+.main{padding:clamp(14px,1.15vw,24px)}
+.sp-external-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(150px,auto);gap:14px}
+.sp-external-card{padding:18px;overflow-wrap:anywhere;display:flex;flex-direction:column}.sp-external-card-header,.sp-external-card-body,.sp-external-card-footer{min-width:0}
+.sp-featured{grid-row:span 2;grid-column:span 1}
+.sp-external-card ul{padding-left:20px}.sp-external-card-footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.ed-grid{grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);gap:16px}.ed-prev{overflow:auto}
+.xscroll{max-height:calc(100dvh - 330px);min-height:240px;overscroll-behavior:contain}
+.x-row-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:var(--surface2)}
+.x-row-tools label{display:flex;align-items:center;gap:6px}.x-row-tools select{min-height:32px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.x-edu-issues{width:100%;font-size:12px;line-height:1.7;color:var(--ink2)}.x-edu-issues summary{cursor:pointer}
+.xls td.xrow-action{background:var(--surface)!important;vertical-align:middle;text-align:center;white-space:nowrap;border:0!important}
+.xrow-delete{cursor:pointer;font:11px 'Malgun Gothic',sans-serif;color:#b42318;background:#fff4f2;border:1px solid #f1c5be;border-radius:5px;padding:4px}
+@media(min-width:1600px){.sp-external-grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(170px,auto)}.sp-featured{grid-row:span 2;grid-column:span 1}.sp-external-card{min-height:0}.sp-featured{min-height:0}.ed-grid{grid-template-columns:minmax(0,1.35fr) minmax(420px,.85fr)}}
+@media(max-width:1250px){.ed-grid{grid-template-columns:minmax(0,1fr)}.ed-prev{max-height:70dvh}.sp-external-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-featured{grid-row:span 2}}
+@media(max-width:760px){.main{padding:12px}.sp-external-grid{grid-template-columns:minmax(0,1fr)}.sp-featured{grid-row:auto;grid-column:auto}.sp-external-card{padding:14px;min-height:0}.row{flex-wrap:wrap}.bar{flex-wrap:wrap;gap:8px}.xscroll{max-height:65dvh;min-height:220px}.x-row-tools{align-items:flex-start}.ed-grid{gap:12px}.ed-form,.ed-prev{width:100%;min-width:0}.ed-form .fld input,.ed-form .fld select,.ed-form .fld textarea{max-width:100%}}
+/* 계약서 편집 표: 문서 출력의 A4 규격과 분리합니다. */
+#c-form{min-width:0}#c-form .fgrid{grid-template-columns:repeat(2,minmax(220px,1fr));gap:14px}
+#c-form .fld input:not([type=checkbox]),#c-form .fld select{min-height:40px;font-size:14px;padding:8px 10px}#c-form .fld textarea{min-height:80px;font-size:14px;line-height:1.5}
+.contract-rows{max-width:100%;overflow:auto;overscroll-behavior-x:contain;border:1px solid var(--line);border-radius:8px;margin:10px 0}
+.contract-rows table.rows{table-layout:fixed;font-size:14px}
+.contract-rows table.rows th{padding:10px 12px;font-size:13px;font-weight:600}
+.contract-rows table.rows td{padding:8px;vertical-align:top}
+.contract-rows table.rows input:not([type=checkbox]),.contract-rows table.rows textarea,.contract-rows table.rows select{display:block;box-sizing:border-box;width:100%;min-height:42px;font-size:14px;line-height:1.45;padding:8px 10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px}
+.contract-rows table.rows textarea{min-height:66px;resize:vertical}
+.contract-rows table.rows input[type=checkbox]{width:auto;min-width:18px;min-height:18px}
+.contract-rows table.rows td.amt{padding:18px 12px}.contract-rows .act .ib{min-width:30px;min-height:34px}
+@media(min-width:1600px){#c-form .contract-rows{scrollbar-gutter:stable}}
+@media(max-width:760px){#c-form .fgrid{grid-template-columns:minmax(0,1fr)}#c-form .fld.wide{grid-column:auto}.contract-rows table.rows th{padding:8px}.contract-rows table.rows td{padding:6px}}
+/* 업무사이트: 왼쪽 대형 코치 + 오른쪽 네 카드. 렌더러 내장 스타일보다 우선 적용합니다. */
+.sp-workspaces .sp-external-grid{grid-template-columns:minmax(0,2fr) repeat(2,minmax(0,1fr));grid-auto-rows:auto;gap:14px;align-items:stretch}
+.sp-workspaces .sp-external-card{min-width:0;min-height:0;padding:16px}
+.sp-workspaces .sp-featured{grid-column:1;grid-row:1 / span 2;padding:28px;border-color:#8ca8e8;background:linear-gradient(145deg,var(--surface,#fff),var(--surface2,#eef1f6))}
+.sp-workspaces .sp-featured .sp-site-icon{width:56px;height:56px;flex-basis:56px}
+.sp-workspaces .sp-featured .sp-site-icon svg{width:30px;height:30px}
+.sp-workspaces .sp-featured .sp-site-headings h3{font-size:24px}
+.sp-workspaces .sp-featured .sp-site-description{font-size:16px;margin-top:18px}
+.sp-workspaces .sp-featured .sp-site-features{font-size:15px;line-height:2;margin:24px 0}
+.sp-workspaces .sp-featured .sp-site-use{font-size:14px;padding:16px}
+.sp-workspaces .sp-featured .sp-site-actions .btn{min-height:44px;font-size:15px;padding:10px 18px}
+.sp-workspaces .sp-site-headings{min-width:0}
+.sp-workspaces .sp-site-actions{flex-wrap:wrap}
+@media(max-width:1100px){.sp-workspaces .sp-external-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-workspaces .sp-featured{grid-column:1 / -1;grid-row:auto;padding:24px}}
+@media(max-width:760px){.sp-workspaces .sp-external-grid{grid-template-columns:minmax(0,1fr)}.sp-workspaces .sp-featured{grid-column:auto;padding:20px}.sp-workspaces .sp-featured .sp-site-headings h3{font-size:21px}}
+@media print{.x-row-tools,.xrow-action{display:none!important}.main{padding:0}.xscroll{max-height:none}}

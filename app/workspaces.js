@@ -8,31 +8,33 @@
     { kind: 'public-sales', title: '공공영업', detail: '사용자가 제공한 공공영업 자료로 전략 검토를 요청하는 내장 작업공간입니다. 외부 영업 코치·조직·계정 관리 서비스에 연결되지 않습니다.' }
   ];
   const EXTERNAL_SITES = [
-    { title: '계약서 초안 생성기', url: 'https://pray2god4u.github.io/contract-generator/', detail: '별도 약정서·합의서 등 계약서 초안 작성 사이트입니다.' },
-    { title: '기술문서 인텔리전스', url: 'https://pray2god4u.github.io/mfg-tech-copilot/search.html', detail: '제조 고객 상담에 필요한 기술문서 검색 사이트입니다.' },
-    { title: '행정사례 AI', url: 'https://korea-admin-case-ai-mvp04.good4min.chatgpt.site/', detail: '공공사업 유사 사례와 기획 근거를 확인하는 사이트입니다.' },
-    { title: '공공영업 인사이트 코치', url: 'https://public-sales-insight-coach.onrender.com/', detail: '공공영업 전략·코칭 사이트입니다. 별도 로그인 또는 초대 권한이 필요할 수 있습니다.' }
+    { title: '공공영업 인사이트 코치', icon: 'chart', subtitle: '공공영업 상황실 — 기관·기업 동향과 영업 알림', url: 'https://public-sales-insight-coach.onrender.com/', detail: '공공기관·기업 정보를 모아 오늘의 뉴스·공고·근거 변화를 집계하고, 내 영업 알림으로 알려주는 공공영업 상황실입니다. 기관 검색부터 채용 동향, 계정 관리까지 한 화면에서 처리합니다.', features: ['전체 공공기관·기업·기관별 검색','오늘 뉴스·매체정보와 근거 변화·공고 집계','내 영업 알림 — 기관·기업 신규 소식 자동 수집','나라장터 통합검색·자치체 상담기관 조회','담당자 채용 대기 현황 확인','조직도·계정 관리와 개인 초대 링크 발급'], useCase: '공공기관·기업 동향을 매일 점검해 영업 기회를 놓치지 않을 때' },
+    { title: 'ERP 통합현황', icon: 'chart', subtitle: '예산·인건비·자금·법인카드·전자결재 통합 대시보드', url: new URL('./dashboards/erp/index.html', location.href).href, detail: '첨부해 주신 통합 메뉴와 연결 대시보드를 로컬 PC에서 엽니다. 포함된 데이터는 기존 파일의 저장본이며 실시간 ERP 조회 결과가 아닙니다.', features: ['5개 업무 현황을 탭으로 전환','1920×1080 및 작은 화면에 맞춘 배치','외부 사이트로 업로드하지 않고 로컬에서 표시'], useCase: '기존 ERP·경비·결재 현황 파일을 한 화면에서 확인' },
+    { title: '계약서 초안 생성기', icon: 'document', subtitle: 'AI Hub 법률 문서 서식 기반 계약서 초안', url: 'https://pray2god4u.github.io/contract-generator/', detail: '법률 문서 서식 1만 8천여 건을 86개 유형으로 정리해, 서식을 고르고 정보를 넣으면 계약서 초안을 만들어 줍니다.', features: ['대분류·중분류·계약 문서/계약 외 문서로 서식 찾기','입력 정보를 반영한 초안 생성, 사내 GenAI로 AI 초안(사내망에서만)','워드(DOCX)·한글(HWPX)·텍스트로 저장, 복사'], useCase: '표준 계약서 양식에 없는 별도 약정서·합의서 초안 작성' },
+    { title: '기술문서 인텔리전스', icon: 'document', subtitle: '제조현장 기술지원용 기술문서 검색', url: 'https://pray2god4u.github.io/mfg-tech-copilot/search.html', detail: 'AI Hub 기술문서 153건을 브라우저 안에서 검색·추천·비교합니다.', features: ['하이브리드·의미·본문·카탈로그 검색 방식 선택','문서 유형(데이터 설명서, 구축·활용 가이드)·데이터셋 번호 필터','검색어는 서버로 보내지 않고 이 PC에서 처리','처음 실행 시 검색 모델(약 145MB)을 내려받음'], useCase: '제조 고객 상담 전 기술 근거 확인' },
+    { title: '행정사례 AI', icon: 'scales', subtitle: '공공사업 기획 근거 작업대', url: 'https://korea-admin-case-ai-mvp04.good4min.chatgpt.site/', detail: '공공사업 기록 약 2만 4천 건에서 유사 사업을 찾아 예산·과업 범위·조달 방식을 비교합니다.', features: ['기관명·사업명·목적·추정 예산으로 유사 사업 찾기','사례 5~10건을 골라 비교표 작성','출처 URL이 들어간 엑셀·문서 초안 내려받기','지방재정365·나라장터 공개 데이터 기반'], useCase: '공공기관 제안 전 유사 사례·예산 근거 정리' },
   ];
   const mounted = new WeakMap();
   function externalLinks() {
-    const area = node('section', null, 'sp-external-sites');
-    area.setAttribute('aria-label', '업무사이트 링크');
-    area.append(node('h2', '업무사이트 바로가기'), node('p', '원래 업무사이트 4개를 새 탭으로 엽니다. 사이트별 로그인·접속 권한은 해당 서비스에서 확인하세요.', 'sp-muted'));
+    const area = node('section', null, 'sp-external-sites'); area.setAttribute('aria-label', '업무사이트 링크');
+    const paths = { document: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 12h8M8 16h8"/>', scales: '<path d="M12 3v17M6 21h12M4 7h16M7 7l-4 7h8zM17 7l-4 7h8z"/>', chart: '<path d="M4 3v17h17M8 17v-6M13 17V6M18 17V9"/>' };
     const grid = node('div', null, 'sp-external-grid');
-    EXTERNAL_SITES.forEach(site => {
-      const card = node('article', null, 'sp-external-card');
-      card.append(node('h3', site.title), node('p', site.detail, 'sp-muted'));
-      const actions = node('div', null, 'sp-actions');
-      const link = node('a', '사이트 열기 ↗', 'btn pri');
-      link.href = site.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      link.setAttribute('aria-label', site.title + ' 새 탭에서 열기');
-      const feedback = node('span', '', 'sp-muted'); feedback.setAttribute('aria-live', 'polite');
+    EXTERNAL_SITES.forEach((site, siteIndex) => {
+      const card = node('article', null, 'sp-external-card' + (siteIndex === 0 ? ' sp-featured' : '')), header = node('div', null, 'sp-site-header');
+      const icon = node('div', null, 'sp-site-icon'); icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + paths[site.icon] + '</svg>';
+      const headings = node('div', null, 'sp-site-headings'); headings.append(node('h3', site.title), node('p', site.subtitle)); header.append(icon, headings);
+      const features = node('ul', null, 'sp-site-features'); site.features.forEach(text => features.append(node('li', text)));
+      const useCase = node('div', null, 'sp-site-use'); useCase.append(node('strong', '이럴 때: '), node('span', site.useCase));
+      const footer = node('div', null, 'sp-site-footer'), actions = node('div', null, 'sp-site-actions');
+      const link = node('a', '사이트 열기 ↗', 'btn pri'); link.href = site.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.setAttribute('aria-label', site.title + ' 새 탭에서 열기');
+      const feedback = node('span', '', 'sp-site-feedback'); feedback.setAttribute('aria-live', 'polite');
       const copy = button('주소 복사', async () => {
         try { await navigator.clipboard.writeText(site.url); feedback.textContent = '주소를 복사했습니다.'; }
         catch (_) { feedback.textContent = '아래 주소를 직접 선택해 복사하세요.'; }
       });
-      const address = node('p', site.url, 'sp-muted sp-site-address');
-      actions.append(link, copy); card.append(actions, address, feedback); grid.append(card);
+      actions.append(link, copy); footer.append(actions, node('p', site.url, 'sp-site-address'), feedback);
+      card.append(header, node('p', site.detail, 'sp-site-description'), features, useCase, footer); grid.append(card);
     });
     area.append(grid); return area;
   }
@@ -150,8 +152,11 @@
         if (next != null) { e.preventDefault(); switchTab(instance, next); instance.host.querySelectorAll('[role="tab"]')[next].focus(); }
       }); tabs.append(b);
     });
-    style.textContent += '.sp-external-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin:16px 0 28px}.sp-external-card{border:1px solid var(--line,#dce3ee);border-radius:12px;padding:20px;background:var(--panel,#fff)}.sp-external-card h3{margin:0 0 10px}.sp-site-address{overflow-wrap:anywhere;user-select:text}.sp-external-card a:focus-visible{outline:3px solid #508df0;outline-offset:3px}';
-    root.append(style, externalLinks(), node('h2', '내장 분석 작업공간'), tabs, panel(SERVICES[instance.index], instance.states[instance.index], instance)); instance.host.replaceChildren(root);
+    style.textContent += '#site-grid{display:block}#view-sites>.page-head p{max-width:520px}.sp-external-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:20px 0 16px}.sp-external-card{box-sizing:border-box;display:flex;flex-direction:column;border:1px solid var(--line,#dfe3e9);border-radius:18px;padding:18px;background:var(--surface,#fff);color:var(--text,#242a35);font-size:13px}.sp-site-header{display:flex;align-items:center;gap:12px;margin-bottom:13px}.sp-site-icon{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:10px;color:#285ad2;background:#edf2ff}.sp-site-icon svg{width:21px;height:21px}.sp-site-headings h3{margin:0;font-size:16px;font-weight:700;line-height:1.5}.sp-site-headings p{margin:2px 0 0;color:var(--muted,#8993a3);font-size:12px}.sp-site-description{margin:0;line-height:1.65}.sp-site-features{margin:12px 0 10px;padding-left:18px;font-size:12px;line-height:1.65}.sp-site-features li{margin:0}.sp-site-use{padding:8px 10px;border:1px solid var(--line,#eef0f4);border-radius:9px;background:var(--bg,#f7f9fc);font-size:12px;line-height:1.6}.sp-site-use strong{color:#3e63ae}.sp-site-footer{margin-top:auto;padding-top:15px}.sp-site-actions{display:flex;gap:9px;align-items:center}.sp-site-actions .btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:33px;padding:6px 12px;border:1px solid var(--line,#d9dfe8);border-radius:9px;font:inherit;font-size:12px;text-decoration:none;white-space:nowrap;background:var(--surface,#fff);color:var(--text,#283142)}.sp-site-actions .pri{background:#2459d3;border-color:#2459d3;color:#fff}.sp-site-address{margin:8px 0 0;font-size:11px;color:var(--muted,#909aab);overflow-wrap:anywhere;user-select:text}.sp-site-feedback{font-size:12px;color:#2459d3}.sp-site-feedback:empty{display:none}.sp-external-card a:focus-visible{outline:3px solid #508df0;outline-offset:3px}.sp-native-analysis{margin-top:20px}.sp-native-analysis>summary{cursor:pointer;color:var(--muted,#66738b);font-size:13px;padding:10px 0}.sp-native-analysis .sp-tabs{margin-top:12px}@media(max-width:760px){.sp-external-grid{grid-template-columns:1fr}.sp-external-card{padding:16px}}';
+    const native = node('details', null, 'sp-native-analysis'); native.open = instance.analysisOpen === true;
+    native.addEventListener('toggle', () => { instance.analysisOpen = native.open; });
+    native.append(node('summary', '내장 분석 작업공간 열기'), tabs, panel(SERVICES[instance.index], instance.states[instance.index], instance));
+    root.append(style, externalLinks(), native); instance.host.replaceChildren(root);
   }
   function switchTab(instance, index) {
     if (instance.states.some(state => state.busy)) return;

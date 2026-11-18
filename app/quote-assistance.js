@@ -234,7 +234,7 @@
     } catch (e) { result.notes.push(e.message || String(e)); }
     return result;
   }
-  const api = { autoEducation, hardwareImport };
+  const api = { autoEducation, hardwareImport, pdfTables };
   root.SalesPilotQuoteAssistance = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

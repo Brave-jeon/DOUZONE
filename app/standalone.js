@@ -79,6 +79,7 @@
       const url = await assetUrl(id);
       return { id, url, name, filename: name, type: blob.type, size: blob.size };
     },
+    upload: function(f){return this.put(f);},
     url: assetUrl,
     async get(id) {
       const item = await request('assets', 'readonly', store => store.get(typeof id === 'object' ? id.id : id));

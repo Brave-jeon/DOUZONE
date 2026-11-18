@@ -75,7 +75,7 @@ function xlInputs(d,sheet){
     for(let r=+m[2];r<=+(m[4]||m[2]);r++){const a=m[1]+r;if(r<10||F(a))continue;map[a]={t:'sel',f:dv.f,label:'선택'}}})});
   const hdrB=/업체명|담당자|견적명|견적담당/,hdrI=/영업센터|영업담당|납품기일|납품장소|서비스장소|지불조건|유효기간/;
   for(let r=3;r<=22;r++){const b=String(V('B'+r)||'').replace(/\s/g,''),i=String(V('I'+r)||'').replace(/\s/g,'');
-    if(r<=10&&hdrB.test(b)&&!F('D'+r))map['D'+r]={t:'text',label:b};
+    if(r<=10&&hdrB.test(b)&&(!F('D'+r)||/^[^!]+![A-Z]{1,3}\d+$/.test(String(C('D'+r).f||''))))map['D'+r]={t:'text',label:b};
     if(hdrI.test(i)){const col=C('J'+r)?'J':(C('K'+r)?'K':'J');if(!F(col+r))map[col+r]={t:'text',label:i}}}
   return d.inputs[sheet]=map;
 }

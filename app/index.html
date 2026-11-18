@@ -110,7 +110,7 @@ table.rows input:hover,table.rows textarea:hover{border-color:var(--line)}
 table.rows input:focus,table.rows textarea:focus{border-color:var(--accent);background:var(--surface2)}
 table.rows textarea{resize:vertical;min-height:28px;line-height:1.35}
 table.rows input[type=number]{text-align:right}
-table.rows td.amt{text-align:right;font-variant-numeric:tabular-nums;padding:7px 6px;white-space:nowrap;font-weight:600}
+table.rows td.amt{text-align:right;font-variant-numeric:tabular-nums;padding:7px 6px;white-space:nowrap;font-weight:600}.contract-rows td.amt{white-space:normal;word-break:keep-all;line-height:1.4;min-width:240px}
 table.rows td.act{white-space:nowrap}
 .tpl-we-ed .col-spec{display:none}
 .hint{font-size:11.5px;color:var(--muted)}
@@ -647,22 +647,23 @@ body.is-login .wrap{padding:0;max-width:none}
 .tpl-br table.b th{background:#eef2f7}
 .tpl-br .sec{margin-top:10px}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="./ai-client.js?v=20261111-1"></script>
-<script src="./member-auth.js?v=20261111-1"></script>
-<script src="./folder-storage.js?v=20261111-1"></script>
-<script src="./remote-db.js?v=20261111-1"></script>
-<script src="./dictation.js?v=20261111-1"></script>
-<script src="./standalone.js?v=20261111-1"></script>
-<script src="./desktop-handoff.js?v=20261111-1"></script>
-<script src="./workspaces.js?v=20261111-1"></script>
-<script src="./quote-numbering.js?v=20261111-1"></script>
-<script src="./quote-layout.js?v=20261111-1"></script>
-<script src="./quote-assistance.js?v=20261111-1"></script>
-<script src="./hardware-integration.js?v=20261111-1"></script>
-<script src="./hardware-quote-ui.js?v=20261111-1"></script>
+<script src="./vendor/local-pdf/pdf-lib.min.js"></script>
+<script src="./pdf-tools.js?v=20261113-local"></script>
+<script src="./ai-client.js?v=20261113-local"></script>
+<script src="./member-auth.js?v=20261113-local"></script>
+<script src="./folder-storage.js?v=20261113-local"></script>
+<script src="./remote-db.js?v=20261113-local"></script>
+<script src="./dictation.js?v=20261113-local"></script>
+<script src="./standalone.js?v=20261113-local"></script>
+<script src="./desktop-handoff.js?v=20261113-local"></script>
+<script src="./workspaces.js?v=20261113-sitescards"></script>
+<script src="./quote-numbering.js?v=20261113-local"></script>
+<script src="./quote-layout.js?v=20261113-local"></script>
+<link rel="stylesheet" href="./responsive-ui.css?v=20261117">
+<script src="./quote-row-controls.js?v=20261117"></script>
+<script src="./quote-assistance.js?v=20261113-local"></script>
+<script src="./hardware-integration.js?v=20261113-local"></script>
+<script src="./hardware-quote-ui.js?v=20261113-local"></script>
 <script>
 /* 미니 엑셀 수식 엔진 (견적 양식 전용) */
 const XL=(function(){
@@ -1220,7 +1221,7 @@ function krw(n){n=Math.round(Math.abs(n));if(!n)return'영';const d='영일이�
 const words=(n,vat)=>`금 ${krw(n)}원 정 (₩ ${fmt(n)}원${vat==='포함'?'':' : VAT 별도'})`;
 
 /* ---------- 기본 데이터 ---------- */
-const PROPOSER={proposerName:'회사01',bizNo:'비공개',addr:'비공개',ceo:'담당자01, 담당자02'};
+const PROPOSER={proposerName:'(주)더존비즈온',bizNo:'134-81-08473',addr:'강원특별자치도 춘천시 남산면 버들1길 130',ceo:'이 강 수, 지 용 구'};
 const blankRow=()=>({cat:'',sub:'',item:'',spec:'',price:'',qty:'',unit:'식',dc:'',free:'',stdOv:'',amt:'',note:''});
 function newSec(title,payType,extra){return Object.assign({title,payType,payLabel:payType,sumLabel:'',sumGroup:'',subtotalLabel:'',billLabel:'',billTiming:'',billTerms:'',inSummary:true,rows:[blankRow()]},extra||{})}
 function newQuote(tpl){
@@ -1250,7 +1251,7 @@ const cg=w=>'<colgroup>'+w.map(x=>`<col style="width:${x}px">`).join('')+'</colg
 
 function a10Blocks(q){
   const B=[];const t=qTot(q);const vat=q.vat;
-  B.push({html:`<div class="banner"><h1>${esc(q.docTitle)}</h1><small>회사01 Estimate statement</small><div class="tag">Authentic Innovation,<br><b>AX and More</b></div></div>
+  B.push({html:`<div class="banner"><h1>${esc(q.docTitle)}</h1><small>Douzone Estimate statement</small><div class="tag">Authentic Innovation,<br><b>AX and More</b></div></div>
   <div class="brandrow"><span class="custmark">${esc(q.customer)}</span><span class="dzlogo">DOUZONE</span></div>`});
   const kv=rows=>'<table class="kv">'+rows.map(([k,v,cls])=>`<tr><td class="k">${k}</td><td class="v ${cls||''}">${v}</td></tr>`).join('')+'</table>';
   B.push({html:`<div class="info">${kv([['업체명',esc(q.customer)+' 귀중'],['담당자',esc(q.contact)+(q.contact?' 귀하':'')],['견적명',esc(q.quoteName),'blue'],['견적번호',esc(q.quoteNo)],['견적담당',esc(q.quoteOwner)]])}
@@ -1355,7 +1356,7 @@ async function quotePages(q,opt){
   const pages=await paginate(blocks,'tpl-'+tpl,CONTENT_H);
   const out=[];
   if(tpl==='a10'&&q.cover&&opt.cover!==false){
-    out.push(`<div class="page tpl-a10"><div class="cover"><div class="band"></div><div class="mid"><div class="cn">${esc(q.customer)}</div><div class="line"></div><div class="ct">${esc(q.coverTitle||'가격제안서')}</div><div class="cs">회사01 Estimate statement</div></div>
+    out.push(`<div class="page tpl-a10"><div class="cover"><div class="band"></div><div class="mid"><div class="cn">${esc(q.customer)}</div><div class="line"></div><div class="ct">${esc(q.coverTitle||'가격제안서')}</div><div class="cs">Douzone Estimate statement</div></div>
      <div class="bot"><div><div class="cd">${kDate(q.quoteDate)}</div><div class="cr">Copyright ⓒ 회사01. All rights reserved.</div></div><span class="dzlogo">DOUZONE</span></div></div></div>`);
   }
   pages.forEach(p=>out.push(`<div class="page tpl-${tpl}">${p.map(h=>`<div class="blk">${h}</div>`).join('')}${QFOOT}</div>`));
@@ -1527,21 +1528,30 @@ const safeName=s=>String(s||'견적서').replace(/[\\/:*?"<>|]+/g,'_').slice(0,1
 function fileBase(){const q=S.draft;return safeName(`${q.customer||'고객사'}_${q.docTitle||'가격제안서'}_${q.quoteNo||''}`)}
 async function offer(filename,data){
   if(!S.downloads){toast('이 화면에서는 파일 저장을 사용할 수 없습니다');return}
-  try{await S.downloads.save({filename,data});toast('저장했습니다: '+filename)}
-  catch(err){if(err&&err.code==='declined')return;toast('파일을 저장하지 못했습니다'+(err&&err.code?' ('+err.code+')':''))}
+  try{await S.downloads.save({filename,data});
+    let where='';
+    try{const st=window.SalesPilotFiles&&window.SalesPilotFiles.getStatus?window.SalesPilotFiles.getStatus():null;
+      if(st&&st.directoryName)where=' ('+st.directoryName+' 폴더)';
+      else if(st)where=' — 저장 폴더가 미선택 상태입니다. 회원정보 → 저장 폴더에서 폴더를 선택하면 다음부터 그 폴더에 저장됩니다.';
+    }catch(_){}
+    toast('저장했습니다: '+filename+where)}
+  catch(err){if(err&&err.code==='declined')return;
+    if(err&&err.code==='no_directory')toast('저장 폴더가 미선택 상태입니다. 회원정보 → 저장 폴더에서 폴더를 선택해 주세요. ('+filename+'은 브라우저 보관함에 대기 중)');
+    else toast('파일을 저장하지 못했습니다'+(err&&err.code?' ('+err.code+')':''))}
 }
 async function htmlToPdf(pages){
   const host=$('#export-host');host.innerHTML=pages.join('');
   const pdf=new window.jspdf.jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
   const els=[...host.children];
   for(let i=0;i<els.length;i++){
-    const c=await html2canvas(els[i],{scale:2,backgroundColor:'#ffffff',logging:false,useCORS:true,width:794,height:1123,windowWidth:1200});
+    const c=await window.html2canvas(els[i],{scale:2,backgroundColor:'#ffffff',logging:false,useCORS:true,width:794,height:1123,windowWidth:1200});
     if(i)pdf.addPage();pdf.addImage(c.toDataURL('image/jpeg',0.93),'JPEG',0,0,210,297,undefined,'FAST');
   }
   host.innerHTML='';return pdf;
 }
 async function exportPdf(items,base){
-  if(!window.html2canvas||!window.jspdf){toast('PDF 변환 도구를 불러오지 못했습니다. 인쇄용 HTML 저장을 이용해 주세요.');return}
+  if((!window.html2canvas||!window.jspdf)&&window.SalesPilotPdfTools) await window.SalesPilotPdfTools.ensure();
+  if(!window.html2canvas||!window.jspdf){toast('PDF 변환 도구가 없습니다. 인쇄용 HTML 저장 후 브라우저 인쇄에서 PDF로 저장하세요.');return}
   try{
     const htmlPages=items.filter(x=>typeof x==='string');let blob;
     if(htmlPages.length===items.length||!window.PDFLib){
@@ -1553,14 +1563,14 @@ async function exportPdf(items,base){
       for(const x of items){
         if(typeof x==='string'){buf.push(x);continue}
         await flush();
-        try{const res=await fetch('/_blob/'+x.pdf);if(!res.ok)throw 0;const src=await L.PDFDocument.load(await res.arrayBuffer(),{ignoreEncryption:true});
+        try{let u=null;try{u=await S.assets.url(x.pdf)}catch(_){u=null}const res=await fetch(u||'/_blob/'+x.pdf);if(!res.ok)throw 0;const src=await L.PDFDocument.load(await res.arrayBuffer(),{ignoreEncryption:true});
           let idx=src.getPageIndices();if(x.skipFirst&&idx.length>1)idx=idx.slice(1);(await out.copyPages(src,idx)).forEach(p=>out.addPage(p))}catch(_){miss.push(x.name)}
       }
       await flush();blob=new Blob([await out.save()],{type:'application/pdf'});
       if(miss.length)toast('일부 첨부 PDF를 불러오지 못했습니다: '+miss.join(', '));
     }
     await offer(base+'.pdf',blob);
-  }catch(err){toast('PDF 생성 중 오류가 발생했습니다')}
+  }catch(err){console.error('exportPdf 오류:',err);toast('PDF 생성 중 오류가 발생했습니다: '+(err&&err.message?err.message:err))}
 }
 function exportHtml(pages,base,missing){
   const css=$('#printcss').textContent+[...document.querySelectorAll('style[data-xl]')].map(x=>x.textContent).join('\n');
@@ -1575,13 +1585,20 @@ html,body{margin:0;background:#8a919c}
 </style></head><body><div class="hint">Ctrl+P(⌘+P)로 인쇄하거나 ‘PDF로 저장’을 선택하세요. 용지 A4 · 여백 없음 · 배경 그래픽 켜기${missing&&missing.length?'<br>별도 첨부(이 파일에 포함되지 않음): '+missing.map(esc).join(', '):''}</div>${pages.join('')}</body></html>`;
   return offer(base+'.html',doc);
 }
-$('#exp-pdf').onclick=async()=>{const b=$('#exp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await buildPages(S.draft),fileBase())}finally{b.disabled=false;b.textContent='PDF 저장'}};
+$('#exp-pdf').onclick=async()=>{const b=$('#exp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await buildPages(S.draft),fileBase())}catch(err){console.error('PDF 저장 오류:',err);toast('PDF 저장 실패: '+(err&&err.message?err.message:err))}finally{b.disabled=false;b.textContent='PDF 저장'}};
 $('#exp-html').onclick=async()=>exportHtml(await buildPages(S.draft),fileBase());
 
 
 /* ================= 계약서 ================= */
 const CT_STATUS=['작성중','검토중','발송','체결완료','보류'];
-const DZ={name:'회사01',addr:'비공개',bizNo:'비공개',ceo:'담당자01, 담당자02'};
+const DZ={name:'(주)더존비즈온',addr:'강원특별자치도 춘천시 남산면 버들1길 130',bizNo:'134-81-08473',ceo:'이 강 수, 지 용 구'};
+function fillSupplierDefaults(c){
+ const party=c.dzFirst?c.partyA:c.partyB;if(!party)return false;let changed=false;
+ Object.entries(DZ).forEach(([key,value])=>{const old=String(party[key]||'').trim();if(!old||/^(회사01|비공개|담당자01(?:\s*,\s*담당자02)?)$/.test(old)){if(party[key]!==value){party[key]=value;changed=true}}});
+ if(c.coverLines){const text=c.coverLines.replace(/(서비스 제공자\s*[:：]\s*)회사01/g,'$1(주)더존비즈온');if(text!==c.coverLines){c.coverLines=text;changed=true}}
+ if(c.coverName==='회사01'){c.coverName='(주)더존비즈온';changed=true}
+ return changed;
+}
 const AMT_KEYS=[['','직접 입력'],['lic','라이선스(일시납)'],['edu','교육비'],['yr','연납 사용료'],['mon','월납 사용료'],['ai','ONE AI'],['hw','하드웨어'],['ext','외부옵션'],['total','견적 전체']];
 const P_CLOUD='오픈확인서 내 월사용료 과금 개시일 시점부터 1년(별도 서면 요청 없을 시 1년 단위 자동 갱신)';
 const PAYNOTE_STD='1) 교육비 : 교육 시행일과 교육횟수는 교육확인서를 기준으로 한다.\n    ※ 교육비 세금계산서 발행 조건 : 매월 말일 해당월에 교육한 횟수 금액에 대해 세금계산서 발행\n2) 서비스 개시 시 : ONE AI 사용료의 과금 시작 시점이며, 오픈확인서를 통해 변경 가능\n3) 설치 시 : 웹한글기안기 설치 완료 시';
@@ -1594,7 +1611,7 @@ const CT_TYPES={
   conds:[['계약기간',P_CLOUD],['설치장소','더존클라우드센터'],['교육시작','']],
   clause:'아래 고객사와 공급사는 위 계약 조건, [별첨 1] 가격확약서, [별첨 2] 결제방식, [별첨 3] 개통 및 교육 일정, [별첨 4] 서비스 이용약관, [별첨 5] 개인정보처리방침, [별첨 6] 서비스수준협약서(SLA)를 계약 내용으로 하여 상호 신의에 입각하여 이 계약을 체결하고, 그 증거로 이 계약서를 2부 작성하여 쌍방이 기명 날인한 후 각각 1부씩 보관한다.',
   atts:['가격확약서','결제방식','개통 및 교육 일정','서비스 이용약관','개인정보처리방침','서비스수준협약서(SLA)'],labels:['고객사','공급사'],dzFirst:false,
-  coverLines:'서비스 제공자 : 회사01\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
+  coverLines:'서비스 제공자 : (주)더존비즈온\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
   payTitle:'Amaranth 10 Cloud CSAP 결제방식',pay:[PR('라 이 선 스','일시납','모듈 및 옵션','lic','계약 시',100,T7),PR('교 육 비¹⁾','분납','교육비','edu','월말',100,T7),PR('연 사 용 료','연납','SSL인증서,\n연말정산 유저 사용료','yr','연납',100,N10),PR('월 사 용 료','월납','유저 사용료, 원챔버,\n노무관리','mon','매월',100,N10),PR('외 부 옵 션','일시납','웹한글기안기','ext','설치 시²⁾',100,T7)],
   payNotes:'1) 교육비 : 교육 시행일과 교육횟수는 교육확인서를 기준으로 한다.\n    ※ 교육비 세금계산서 발행 조건 : 매월 말일 해당월에 교육한 횟수 금액에 대해 세금계산서 발행\n2) 설치 시 : 웹한글기안기 설치 완료 시',payTotal:false,
   schTitle:'Amaranth 10 Cloud CSAP 개통 및 교육 일정',schSec:'개통 및 교육 일정',schHeads:['분류','','기간'],sch:[['개통','','계약 후 1주일 내 개통 및 개통 확인서 날인'],['교육','1~3 회차','개통 후 2주일 내 1회차 교육 시행'],['','마지막 회차','전(3회차) 교육 후 1주일 내 교육 시행\n(오픈확인서)']],schNotes:''},
@@ -1604,7 +1621,7 @@ const CT_TYPES={
   conds:[['계약기간',P_CLOUD],['설치장소','더존클라우드센터'],['교육시작','']],
   clause:'아래 고객사와 공급사는 위 계약 조건, [별첨 1] 가격확약서, [별첨 2] 결제방식, [별첨 3] 개통 및 교육 일정, [별첨 4] 서비스 이용약관, [별첨 5] 개인정보처리방침을 계약 내용으로 하여 상호 신의에 입각하여 이 계약을 체결하고, 그 증거로 이 계약서를 2부 작성하여 쌍방이 기명 날인한 후 각각 1부씩 보관한다.',
   atts:['가격확약서','결제방식','개통 및 교육 일정','서비스 이용약관','개인정보처리방침'],labels:['고객사','공급사'],dzFirst:false,
-  coverLines:'서비스 제공자 : 회사01\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
+  coverLines:'서비스 제공자 : (주)더존비즈온\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
   payTitle:'Amaranth 10 Cloud 결제방식',pay:[PR('라 이 선 스','일시납','모듈 및 옵션','lic','계약 시',100,T7),PR('교 육 비¹⁾','분납','교육비','edu','월말',100,T7),PR('연 사 용 료','연납','SSL인증서,\n연말정산 유저 사용료','yr','연납',100,N10),PR('월 사 용 료','월납','유저 사용료, 원챔버,\n팩스/문자, 노무관리','mon','매월',100,N10),PR('ONE AI 사용료','연납','ONE AI 사용료','ai','서비스\n개시 시²⁾',100,N10),PR('외 부 옵 션','일시납','웹한글기안기','ext','설치 시³⁾',100,T7)],
   payNotes:PAYNOTE_STD,payTotal:false,
   schTitle:'Amaranth 10 Cloud 개통 및 교육 일정',schSec:'개통 및 교육 일정',schHeads:['분류','','기간'],sch:[['개통','','계약 후 1주일 내 개통 및 개통 확인서 날인'],['교육','1~7 회차','개통 후 2주일 내 1회차 교육 시행'],['','마지막 회차','전(7회차) 교육 후 1주일 내 교육 시행\n(오픈확인서)']],schNotes:''},
@@ -1614,7 +1631,7 @@ const CT_TYPES={
   conds:[['설치장소','고객사와 협의된 장소'],['교육시작',''],['블루멤버십 체결(유상)','유상 블루멤버십 개시일로부터 1년 간(별도 서면 요청 없을 시 1년 단위 자동 갱신)']],
   clause:'아래 고객사와 공급사는 위 계약 조건, [별첨 1] 가격확약서, [별첨 2] 결제방식, [별첨 3] 설치 및 교육 일정, [별첨 4] 서비스 공급약관, [별첨 5] 개인정보처리방침을 계약 내용으로 하여 상호 신의에 입각하여 이 계약을 체결하고, 그 증거로 이 계약서를 2부 작성하여 쌍방이 기명 날인한 후 각각 1부씩 보관한다.',
   atts:['가격확약서','결제방식','설치 및 교육 일정','서비스 공급약관','개인정보처리방침'],labels:['고객사','공급사'],dzFirst:false,
-  coverLines:'서비스 제공자 : 회사01\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
+  coverLines:'서비스 제공자 : (주)더존비즈온\n서비스 이용자 : {거래처}\n계 약 체 결 일 : {계약일}',
   payTitle:'Amaranth 10 결제방식',pay:[PR('라 이 선 스','일시납','모듈 및 옵션, 유저,\n연동 라이선스 외','lic','계약 시',100,T7),PR('교 육 비¹⁾','분납','교육비','edu','월말',100,T7),PR('하 드 웨 어','일시납','H/W, 스팸솔루션 외','hw','인도 시',100,T7),PR('ONE AI 사용료','연납','ONE AI 사용료','ai','서비스\n개시 시²⁾',100,N10),PR('외 부 옵 션','일시납','웹한글기안기','ext','설치 시³⁾',100,T7)],
   payNotes:PAYNOTE_STD,payTotal:false,
   schTitle:'Amaranth 10 설치 및 교육 일정',schSec:'설치 및 교육 일정',schHeads:['서버 설치 기준','자사 서버 구매시','자사 서버 미구매시\n(고객사 자체서버 활용시)'],sch:[['설치','계약 후 2주일 내 설치 및\n설치 확인서 날인','계약 후 1개월 내 설치 및\n설치 확인서 날인'],['1~19 회차','설치 후 2주일 내 1회차 교육 시행',''],['마지막 회차','전(19회차) 교육 이후 1주일 내 교육 시행\n(오픈확인서)','']],schNotes:'1) 자사 서버 구매시 : 표준적인 H/W 스펙에 대한 납품 기준이며, 납품처 재고에 따라 일정이 지연될 수 있습니다.'},
@@ -1623,7 +1640,7 @@ const CT_TYPES={
   conds:[['계약보증금','총 계약금액의 20%'],['지체상금','지체일수당 총 계약금액의 1,000분의 3'],['계약기간',''],['납기일','계약 종료일로부터 10일 전'],['납품장소','갑이 지정한 장소'],['하자보증기간','검수완료 익일로부터 12개월'],['하자보증금','총 계약금액의 10%']],
   clause:'"갑"과 "을"은 도급계약 개별거래조건 및 일반거래조건과 첨부서류에 근거하여 본 계약을 체결하고 신의에 따라 성실하게 계약상 의무를 이행할 것을 확약하며, 이를 증명하기 위하여 계약서 2부를 작성하여 기명날인 한 후 각 1통씩 보관한다.',
   atts:['가격제안서','결제조건','도급계약 일반거래조건','개인정보처리위탁 계약서'],labels:['갑','을'],dzFirst:true,
-  coverLines:'',coverName:'회사01',
+  coverLines:'',coverName:'(주)더존비즈온',
   payTitle:'결제조건',pay:[PR('라 이 선 스 외','선금','라이선스 외','total','계약 후',30,T7),PR('','잔금','라이선스 외','total','완료 후',70,T7)],payNotes:'',payTotal:true,
   schTitle:'',schSec:'',schHeads:['','',''],sch:[],schNotes:''},
  onepe:{name:'ONE AI Private Edition 공급계약',title:'ONE AI Private Edition 공급 계약서',coverTitle:'ONE AI Private Edition 계약서',contractName:'ONE AI Private Edition 계약',
@@ -1632,7 +1649,7 @@ const CT_TYPES={
   conds:[['설치장소','고객사와 협의된 장소'],['구축시작',''],['블루멤버십 체결(무상)','별도 협의 후 진행'],['블루멤버십 체결(유상)','유상 블루멤버십 개시일로부터 1년 간(별도 서면 요청 없을 시 자동 갱신)']],
   clause:'아래 고객사와 공급사는 위 계약 조건, [별첨 1] ONE AI Private Edition 가격확약서, [별첨 2] ONE AI Private Edition 결제방식, [별첨 3] ONE AI Private Edition 서비스 공급약관, [별첨 4] ONE AI Private Edition용 개인정보처리방침을 계약 내용으로 하여 상호 신의에 입각하여 이 계약을 체결하고, 그 증거로 이 계약서를 2부 작성하여 쌍방이 기명 날인한 후 각각 1부씩 보관한다.',
   atts:['ONE AI Private Edition 가격확약서','ONE AI Private Edition 결제방식','ONE AI Private Edition 서비스 공급약관','ONE AI Private Edition용 개인정보처리방침'],labels:['고객사','공급사'],dzFirst:false,
-  coverLines:'서비스 제공자 : 회사01\n서비스 구매자 : {거래처}\n계 약 체 결 일 : {계약일}',
+  coverLines:'서비스 제공자 : (주)더존비즈온\n서비스 구매자 : {거래처}\n계 약 체 결 일 : {계약일}',
   payTitle:'ONE AI Private Edition 결제방식',pay:[PR('라 이 선 스 외','선금','라이선스 외','total','계약 후',30,T7),PR('','잔금','라이선스 외','total','납품 후',70,T7)],payNotes:'',payTotal:true,
   schTitle:'',schSec:'',schHeads:['','',''],sch:[],schNotes:''}
 };
@@ -1667,7 +1684,7 @@ const amountOf=(c,key)=>(c.amounts||[]).filter(a=>a.key===key).reduce((s,a)=>s+n
 const payAmt=(c,r)=>r.key?Math.round(amountOf(c,r.key)*num(r.ratio===''?100:r.ratio)/100):num(r.amount);
 const ctTotal=c=>(c.amounts||[]).reduce((s,a)=>s+num(a.amount),0);
 const titleHtml=t=>esc(t).replace(/(Amaranth )10/,'$1<span class="ten">10</span>');
-const CHEAD=`<div class="chead"><span class="dzlogo">DOUZONE</span><span>강촌캠퍼스 비공개 / 더존을지타워 서울특별시 중구 을지로 29</span><span class="url">www.douzone.com</span></div>`;
+const CHEAD=`<div class="chead"><span class="dzlogo">DOUZONE</span><span style="min-width:0;white-space:normal;font-size:8pt;line-height:1.25">강촌캠퍼스 강원특별자치도 춘천시 남산면 버들1길 130 / 더존을지타워 서울특별시 중구 을지로 29</span><span class="url">www.douzone.com</span></div>`;
 const CFOOT=`<div class="cpfoot">__PN__/__PT__</div>`;
 const fillTok=(s,c)=>String(s||'').replace(/\{거래처\}/g,c.counterparty||'').replace(/\{계약일\}/g,kDate(c.contractDate).replace(/<[^>]+>/g,''));
 function ctCover(c){
@@ -1727,7 +1744,7 @@ function termCover(c,t){const no=termAttNo(c,t);const v=t.variant||'';
   return`<div class="page tpl-ct"><div class="ccover">${no?`<div class="tlab">[별첨 ${no}]</div>`:''}<div class="mp">Maximizing<br>Potential</div>
    <div class="ctt tct">${titleHtml(t.coverTitle||t.name)}</div>
    ${v?['패키지','커스터마이징'].map(x=>`<div class="copt"><i class="cbx ${x===v?'on':''}"></i>${x}</div>`).join(''):''}
-   <div class="lines" style="margin-top:70px">서비스 제공자 : 회사01\n서비스 이용자 : ${esc(c.counterparty)}</div><div class="dot"></div><div class="arc"></div>
+   <div class="lines" style="margin-top:70px">서비스 제공자 : (주)더존비즈온\n서비스 이용자 : ${esc(c.counterparty)}</div><div class="dot"></div><div class="arc"></div>
    <div class="logo"><div class="dzlogo">DOUZONE</div><div class="u">www.douzone.com</div></div></div>${CFOOT}</div>`}
 async function contractPages(c,mode){const forPreview=mode===true||mode==='preview';
   const out=[];
@@ -1790,11 +1807,13 @@ function inp(p,v,o){o=o||{};const a=`data-p="${p}" aria-label="${esc(o.label||p)
   return`<input ${o.type==='n'?'type="number" step="any"':o.type==='date'?'type="date"':''} ${a} value="${esc(v)}"${o.ph?` placeholder="${esc(o.ph)}"`:''}>`}
 function fld(label,p,v,o){o=o||{};return`<label class="fld${o.wide?' wide':''}${o.type==='chk'?' chk':''}">${o.type==='chk'?inp(p,v,Object.assign({label},o))+`<span>${label}</span>`:`<span>${label}</span>${inp(p,v,Object.assign({label},o))}`}</label>`}
 function rowsEd(path,cols,extra,root){
-  const rows=getP(root||S.cdraft,path)||[];
-  return`<div class="rows-wrap"><table class="rows" style="min-width:${cols.reduce((s,c)=>s+c[2],0)+130}px"><thead><tr>${cols.map(c=>`<th style="width:${c[2]}px">${c[1]}</th>`).join('')}${extra?'<th style="text-align:right">'+extra.h+'</th>':''}<th></th></tr></thead><tbody>
-  ${rows.map((r,i)=>`<tr>${cols.map(([k,l,w,t,opts])=>`<td>${inp(`${path}.${i}.${k}`,r[k],{type:t,opts,label:l})}</td>`).join('')}${extra?`<td class="amt" data-calc="${path}.${i}">${extra.f(r)}</td>`:''}
-   <td class="act"><button class="ib" data-cact="up" data-p="${path}" data-i="${i}" title="위로">↑</button> <button class="ib" data-cact="down" data-p="${path}" data-i="${i}" title="아래로">↓</button> <button class="ib" data-cact="del" data-p="${path}" data-i="${i}" title="삭제">✕</button></td></tr>`).join('')}
-  </tbody></table></div><div><button class="ib" data-cact="add" data-p="${path}">+ 행 추가</button></div>`;
+ const rows=getP(root||S.cdraft,path)||[];
+ const widths=cols.map(([k,l,w,t])=>Math.max(w||120,/^(label|c1)$/.test(k)?230:/^(value|note|desc|timing|terms|c2|c3)$/.test(k)?240:/^(num|n|sel|date)$/.test(t||'')?170:140));
+ const total=widths.reduce((s,w)=>s+w,0)+(extra?260:0)+130;
+ return`<div class="rows-wrap contract-rows"><table class="rows" style="table-layout:fixed;min-width:${total}px"><colgroup>${widths.map(w=>`<col style="width:${w}px">`).join('')}${extra?'<col style="width:260px">':''}<col style="width:130px"></colgroup><thead><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}${extra?'<th style="text-align:right">'+extra.h+'</th>':''}<th>행 편집</th></tr></thead><tbody>
+ ${rows.map((r,i)=>`<tr>${cols.map(([k,l,w,t,opts])=>`<td>${inp(`${path}.${i}.${k}`,r[k],{type:t||(/^(label|value|note|desc|timing|terms|c1|c2|c3)$/.test(k)?'ta':undefined),opts,label:l})}</td>`).join('')}${extra?`<td class="amt" data-calc="${path}.${i}">${extra.f(r)}</td>`:''}
+ <td class="act"><button class="ib" data-cact="up" data-p="${path}" data-i="${i}" title="위로">↑</button> <button class="ib" data-cact="down" data-p="${path}" data-i="${i}" title="아래로">↓</button> <button class="ib" data-cact="del" data-p="${path}" data-i="${i}" title="삭제">✕</button></td></tr>`).join('')}
+ </tbody></table></div><div><button class="ib" data-cact="add" data-p="${path}">+ 행 추가</button></div>`;
 }
 function renderCForm(){
   const c=S.cdraft;const T=CT_TYPES[c.type]||{};const q=c.quoteId&&S.quotes.get(c.quoteId);
@@ -1822,7 +1841,7 @@ function renderCForm(){
   ${(c.items||[]).length||T.items&&T.items.length?`<div class="card"><h3>계약 물품</h3><div class="chk-grid">${(c.items||[]).map((it,i)=>`<label class="fld chk">${inp(`items.${i}.on`,it.on,{type:'chk',label:it.label})}<span>${esc(it.label)}</span></label>`).join('')}</div>
     <details class="opts"><summary>물품 목록 편집</summary><label class="fld wide"><span>한 줄에 하나씩</span><textarea data-p="__items" rows="5">${esc((c.items||[]).map(i=>i.label).join('\n'))}</textarea></label></details></div>`:''}
   <div class="card"><h3>계약 금액</h3><p class="hint" style="margin:-4px 0 8px">‘견적 연결’ 항목은 ‘견적 금액 다시 반영’을 누를 때 견적의 해당 섹션 합계로 채워집니다. 금액은 직접 고쳐도 됩니다.</p>
-    ${rowsEd('amounts',[['label','항목',150],['amount','금액',130,'n'],['key','견적 연결',130,'sel',AMT_KEYS],['note','납부 표기',220,'ta']],{h:'한글 금액',f:a=>num(a.amount)?krw(num(a.amount))+'원':'-'})}
+    ${rowsEd('amounts',[['label','항목',110],['amount','금액',120,'n'],['key','견적 연결',120,'sel',AMT_KEYS],['note','납부 표기',170,'ta']],{h:'한글 금액',f:a=>num(a.amount)?krw(num(a.amount))+'원':'-'})}
     <p class="hint" style="margin:8px 0 0">계약 금액 합계 <b id="ct-total">${fmt(ctTotal(c))}</b>원</p></div>
   <div class="card"><h3>계약 조건</h3>${rowsEd('conds',[['label','항목',150],['value','내용',460,'ta']])}</div>
   <div class="card"><h3>본문</h3><div class="fgrid">${fld('특약 문구 (계약 조건 아래, 선택)','special',c.special,{type:'ta',wide:true,rows:3})}${fld('계약 체결 문구','clause',c.clause,{type:'ta',wide:true,rows:4})}</div></div>
@@ -1837,7 +1856,12 @@ function renderCForm(){
     ${rowsEd('schedule.rows',[['c1','1열',130,'ta'],['c2','2열',230,'ta'],['c3','3열',230,'ta']])}
     <div class="fgrid" style="margin-top:8px">${fld('주석','schedule.notes',c.schedule.notes,{type:'ta',wide:true,rows:2})}</div></div>
   <div class="card"><h3>약관 · 개인정보처리방침 PDF</h3>
-    <p class="hint" style="margin:-4px 0 8px">서비스 이용약관, 공급약관, 개인정보처리방침처럼 고정된 문서는 원본 PDF를 한 번 올려 두면, PDF 저장 시 계약서 뒤에 그대로 붙습니다. 체크한 순서대로 붙습니다.</p>
+    <p class="hint" style="margin:-4px 0 8px">이 계약서 종류의 필수 서류(약관·개인정보처리방침·SLA)는 기본으로 첨부돼 있습니다. 체크한 순서대로 PDF 뒤에 붙습니다.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px">
+      <button type="button" class="btn" data-terms-all="on">전체 첨부</button>
+      <button type="button" class="btn" data-terms-all="default">기본(필수) 서류로</button>
+      <button type="button" class="btn" data-terms-all="off">모두 해제</button>
+    </div>
     <div style="display:grid;gap:8px">${termRows.length?termRows.map(t=>termRowHtml(t,sel.has(t.id),c)).join(''):'<p class="hint" style="margin:0">아직 올린 약관 PDF가 없습니다.</p>'}</div>
     <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${S.assets?`<label class="btn" for="term-file">PDF 올리기</label><input type="file" id="term-file" accept="application/pdf" hidden><span class="hint">올린 파일은 이 계약서 종류의 기본 첨부로 등록됩니다. ‘설정’에서 표지 제목과 기본 첨부 종류를 바꿀 수 있습니다.</span>`:'<span class="hint">PDF를 올리려면 이 페이지의 편집 권한이 필요합니다.</span>'}</div></div>`;
   $('#ct-title').textContent=(c.counterparty||'새 계약서')+' · '+((CT_TYPES[c.type]||{}).name||'');
@@ -1885,6 +1909,12 @@ $('#ct-form').addEventListener('change',async e=>{
   setCDirty(true);scheduleCPreview();
 });
 $('#ct-form').addEventListener('click',e=>{
+  const ta=e.target.closest('[data-terms-all]');
+  if(ta){const c=S.cdraft;const mode=ta.dataset.termsAll;
+    if(mode==='on'){c.appendPdfs=[...S.terms.values()].map(t=>({id:t.id,name:t.name}))}
+    else if(mode==='off'){c.appendPdfs=[]}
+    else{c.appendPdfs=[...S.terms.values()].filter(t=>(t.types||[]).includes(c.type)).map(t=>({id:t.id,name:t.name}))}
+    setCDirty(true);renderCForm();scheduleCPreview();return}
   const b=e.target.closest('[data-cact]');if(!b)return;const c=S.cdraft;const act=b.dataset.cact;
   const arr=b.dataset.p?getP(c,b.dataset.p):null;const i=+b.dataset.i;
   if(act==='add')arr.push(clone(ROW_TPL[b.dataset.p]||{}));
@@ -1902,12 +1932,17 @@ async function uploadTerm(file){
   if(!S.assets||!S.db){toast('PDF를 올릴 수 없는 환경입니다');return}
   if(!/pdf$/i.test(file.type)&&!/\.pdf$/i.test(file.name)){toast('PDF 파일만 올릴 수 있습니다');return}
   toast('업로드 중…');
-  try{const r=await S.assets.upload(file);const name=file.name.replace(/\.pdf$/i,'');const doc={name,assetId:r.id,types:[S.cdraft.type],kind:/개인정보/.test(name)?'개인정보':/SLA|수준협약/.test(name)?'SLA':'약관',variant:/커스터마이징/.test(name)?'커스터마이징':/패키지/.test(name)?'패키지':'',coverTitle:name.replace(/[_ ]?Ver\.?[\d.]+.*$/i,'').replace(/더존용/,'').trim(),skipFirst:true,uploadedAt:new Date().toISOString().slice(0,19)};
+  try{const r=await S.assets.upload(file);const name=file.name.replace(/\.pdf$/i,'');
+    const kind=/개인정보/.test(name)?'개인정보':/SLA|수준협약/.test(name)?'SLA':'약관';
+    const allTypes=Object.keys(CT_TYPES);
+    const defTypes=kind==='개인정보'?allTypes.slice():kind==='SLA'?['csap','cloud']:/도급|위탁/.test(name)?['dogup']:['csap','cloud','onprem','onepe'];
+    const types=Array.from(new Set([S.cdraft.type,...defTypes]));
+    const doc={name,assetId:r.id,types,kind,variant:/커스터마이징/.test(name)?'커스터마이징':/패키지/.test(name)?'패키지':'',coverTitle:name.replace(/[_ ]?Ver\.?[\d.]+.*$/i,'').replace(/더존용/,'').trim(),skipFirst:true,uploadedAt:new Date().toISOString().slice(0,19)};
     await S.db.collection('termdocs').doc(r.id).set(doc);S.terms.set(r.id,Object.assign({id:r.id},doc));
     S.cdraft.appendPdfs=(S.cdraft.appendPdfs||[]).concat({id:r.id,name});renderCForm();setCDirty(true);scheduleCPreview();toast('올렸습니다: '+name)}
   catch(err){toast('업로드하지 못했습니다'+(err&&err.code?' ('+err.code+')':''))}
 }
-function openCEditor(c,isNew){S.cdraft=clone(c);S.cid=c.id;S.cisNew=isNew;setCDirty(!!isNew);resetCArm();renderCForm();show('cedit');renderCPreview()}
+function openCEditor(c,isNew){S.cdraft=clone(c);const supplierChanged=fillSupplierDefaults(S.cdraft);S.cid=c.id;S.cisNew=isNew;setCDirty(!!isNew||supplierChanged);resetCArm();renderCForm();show('cedit');renderCPreview()}
 function openContract(id){const c=S.contracts.get(id);if(c)openCEditor(c,false)}
 function openNewContract(type,q){const c=newContract(type,q);c.id=uid().replace(/^q/,'c');openCEditor(c,true)}
 function resetCArm(){const d=$('#cdel');d.classList.remove('armed');d.textContent='삭제';delete d.dataset.armed;const b=$('#cback');b.textContent='← 목록';delete b.dataset.armed}
@@ -1931,7 +1966,7 @@ $('#cdel').onclick=async()=>{const d=$('#cdel');if(!d.dataset.armed){d.dataset.a
   const id=S.cid;resetCArm();if(!S.cisNew){try{if(S.db)await S.db.collection('contracts').doc(id).delete();S.contracts.delete(id)}catch(_){toast('삭제하지 못했습니다');return}}
   setCDirty(false);S.cdraft=null;show('dash');setTab('c');toast('삭제했습니다')};
 const cBase=()=>{const c=S.cdraft;return safeName(`${c.counterparty||'거래처'}_${c.title||'계약서'}_${c.contractDate||''}`)};
-$('#cexp-pdf').onclick=async()=>{const b=$('#cexp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await contractPages(S.cdraft,'pdf'),cBase())}finally{b.disabled=false;b.textContent='PDF 저장'}};
+$('#cexp-pdf').onclick=async()=>{const b=$('#cexp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await contractPages(S.cdraft,'pdf'),cBase())}catch(err){console.error('PDF 저장 오류:',err);toast('PDF 저장 실패: '+(err&&err.message?err.message:err))}finally{b.disabled=false;b.textContent='PDF 저장'}};
 $('#cexp-html').onclick=async()=>exportHtml(await contractPages(S.cdraft,'html'),cBase(),(S.cdraft.appendPdfs||[]).map(a=>a.name));
 $('#mk-ct').onchange=async e=>{const t=e.target.value;e.target.value='';if(!t)return;
   if(S.draft&&S.draft.status==='작성중'){S.draft.status='제출';setDirty(true);toast('견적을 ‘제출’ 상태로 바꾸고 계약서를 만듭니다')}
@@ -2155,7 +2190,7 @@ $('#ddel').onclick=async()=>{const x=$('#ddel');if(!x.dataset.armed){x.dataset.a
   const id=S.did;resetDArm();if(!S.disNew){try{if(S.db)await S.db.collection('discounts').doc(id).delete();S.discounts.delete(id)}catch(_){toast('삭제하지 못했습니다');return}}
   setDDirty(false);S.ddraft=null;show('dash');setTab('d');toast('삭제했습니다')};
 const dBase=()=>{const d=S.ddraft;return safeName(`${d.customer.name||'고객사'}_할인기안_${(d.writtenAt||'').slice(0,10)}`)};
-$('#dexp-pdf').onclick=async()=>{const b=$('#dexp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await discountPages(S.ddraft),dBase())}finally{b.disabled=false;b.textContent='PDF 저장'}};
+$('#dexp-pdf').onclick=async()=>{const b=$('#dexp-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{await exportPdf(await discountPages(S.ddraft),dBase())}catch(err){console.error('PDF 저장 오류:',err);toast('PDF 저장 실패: '+(err&&err.message?err.message:err))}finally{b.disabled=false;b.textContent='PDF 저장'}};
 $('#dexp-html').onclick=async()=>exportHtml(await discountPages(S.ddraft),dBase());
 $('#mk-dc').onclick=async()=>{if(S.dirty||S.isNew){await save();if(S.dirty)return}const q=S.quotes.get(S.id);if(!q)return;
   if(quoteDiscount(q).disc<=0){toast('할인이 없는 견적입니다. 할인기안이 필요하지 않습니다.');return}
@@ -2195,17 +2230,18 @@ function xlCss(d){
     return`${p} .s${i}{${r.join(';')}}`}).join('\n');
 }
 const colPx=w=>Math.round(w*7+5),rowPx=h=>Math.round(h*96/72);
-function xlModel(d,sheet,area,extraCols){
-  const key=sheet+'|'+area.join(',')+'|'+(extraCols||[]).join(',');if(d.models[key])return d.models[key];
+function xlModel(d,sheet,area,extraCols,excludedRows){
+  const hidden=new Set((excludedRows||[]).filter(k=>k.startsWith(sheet+'!')).map(k=>+k.slice(k.lastIndexOf('!')+1)));
+  const key=sheet+'|'+area.join(',')+'|'+(extraCols||[]).join(',')+'|'+Array.from(hidden).sort((a,b)=>a-b).join(',');if(d.models[key])return d.models[key];
   const sh=d.sheets[sheet];const [r1,c1,r2,c2]=area;
   const cw=c=>{const x=sh.cols&&sh.cols[c];return x?(x[1]?0:colPx(x[0])):colPx(sh.dcw||8.43)};
   const cols=[];for(let c=c1;c<=c2;c++)if(cw(c))cols.push({c,w:cw(c)});(extraCols||[]).forEach(c=>{if(cw(c))cols.push({c,w:cw(c),extra:1})});
-  const rows=[];for(let r=r1;r<=r2;r++){const x=sh.rows&&sh.rows[r];if(x&&x[1])continue;rows.push({r,h:rowPx(x&&x[0]?x[0]:(sh.drh||15))})}
+  const rows=[];for(let r=r1;r<=r2;r++){const x=sh.rows&&sh.rows[r];if((x&&x[1])||hidden.has(r))continue;rows.push({r,h:rowPx(x&&x[0]?x[0]:(sh.drh||15))})}
   const ci=new Map(cols.map((x,i)=>[x.c,i])),ri=new Map(rows.map((x,i)=>[x.r,i]));
   const master=new Map(),covered=new Set();
   (sh.merges||[]).forEach(([a,b,e,f])=>{if(e<r1||a>r2||f<c1||b>c2)return;
     const vr=rows.filter(x=>x.r>=a&&x.r<=e),vc=cols.filter(x=>!x.extra&&x.c>=b&&x.c<=f);if(!vr.length||!vc.length)return;
-    master.set(vr[0].r+','+vc[0].c,{rs:vr.length,cs:vc.length,r2:vr[vr.length-1].r});
+    master.set(vr[0].r+','+vc[0].c,{rs:vr.length,cs:vc.length,r2:vr[vr.length-1].r,ar:a,ac:b});
     vr.forEach(x=>vc.forEach(y=>{if(x!==vr[0]||y!==vc[0])covered.add(x.r+','+y.c)}))});
   let acc=0;cols.forEach(x=>{x.x=acc;acc+=x.w});const W=acc;acc=0;rows.forEach(x=>{x.y=acc;acc+=x.h});
   const m={sheet,area,cols,rows,ci,ri,master,covered,W,H:acc};d.models[key]=m;return m;
@@ -2239,7 +2275,7 @@ function xlInputs(d,sheet){
     for(let r=+m[2];r<=+(m[4]||m[2]);r++){const a=m[1]+r;if(r<10||F(a))continue;map[a]={t:'sel',f:dv.f,label:'선택'}}})});
   const hdrB=/업체명|담당자|견적명|견적담당/,hdrI=/영업센터|영업담당|납품기일|납품장소|서비스장소|지불조건|유효기간/;
   for(let r=3;r<=22;r++){const b=String(V('B'+r)||'').replace(/\s/g,''),i=String(V('I'+r)||'').replace(/\s/g,'');
-    if(r<=10&&hdrB.test(b)&&!F('D'+r))map['D'+r]={t:'text',label:b};
+    if(r<=10&&hdrB.test(b)&&(!F('D'+r)||/^[^!]+![A-Z]{1,3}\d+$/.test(String(C('D'+r).f||''))))map['D'+r]={t:'text',label:b};
     if(hdrI.test(i)){const col=C('J'+r)?'J':(C('K'+r)?'K':'J');if(!F(col+r))map[col+r]={t:'text',label:i}}}
   return d.inputs[sheet]=map;
 }
@@ -2262,20 +2298,21 @@ function xlCellAlign(v,st){if(st&&st.h&&st.h!=='general')return'';return typeof 
 /* 시트 → 표 HTML */
 function xlTable(d,book,m,rowsSub,opt){
   opt=opt||{};const sh=d.sheets[m.sheet];const inputs=opt.inputs||{};
-  let h=`<table class="xls xl-${d.id}" style="width:${m.W}px"><colgroup>${m.cols.map(x=>`<col style="width:${x.w}px">`).join('')}</colgroup>`;
+  const rowControls=!!opt.rowControls;
+  let h=`<table class="xls xl-${d.id}" style="width:${m.W+(rowControls?46:0)}px"><colgroup>${m.cols.map(x=>`<col style="width:${x.w}px">`).join('')}${rowControls?'<col style="width:46px">':''}</colgroup>`;
   const sub=rowsSub||m.rows;const first=sub[0],last=sub[sub.length-1];
   sub.forEach(row=>{h+=`<tr style="height:${row.h}px">`;
     m.cols.forEach(col=>{const k=row.r+','+col.c;
       let ms=m.master.get(k),rs=1,cs=1;
       if(m.covered.has(k)){// 페이지 첫 행에서 잘린 병합은 다시 그림
-        if(row!==first)return;const top=[...m.master.entries()].find(([kk,v])=>{const [rr,cc]=kk.split(',').map(Number);return cc===col.c&&rr<row.r&&v.r2>=row.r});if(!top)return;ms={rs:0,cs:top[1].cs,r2:top[1].r2,clip:1}}
+        if(row!==first)return;const top=[...m.master.entries()].find(([kk,v])=>{const [rr,cc]=kk.split(',').map(Number);return cc===col.c&&rr<row.r&&v.r2>=row.r});if(!top)return;ms=Object.assign({},top[1],{clip:1})}
       if(ms){cs=ms.cs;rs=sub.filter(x=>x.r>=row.r&&x.r<=ms.r2).length||1}
-      const a=XL.colStr(col.c)+row.r;const rc=sh.cells[a];const sid=rc&&rc.s!=null?rc.s:null;const st=sid!=null?d.styles[sid]:null;
-      const v=book.value(m.sheet,row.r,col.c);const inp=inputs[a];
+      const ar=ms?ms.ar:row.r,ac=ms?ms.ac:col.c,a=XL.colStr(ac)+ar;const rc=sh.cells[a];const sid=rc&&rc.s!=null?rc.s:null;const st=sid!=null?d.styles[sid]:null;
+      const v=book.value(m.sheet,ar,ac);const inp=inputs[a];
       const span=(rs>1?` rowspan="${rs}"`:'')+(cs>1?` colspan="${cs}"`:'');
       let cls=(sid!=null?'s'+sid:'')+(col.extra?' xx':'');
       if(inp&&opt.edit){h+=`<td class="${cls} xin"${span}>${xlInputHtml(d,book,m.sheet,a,inp,v,st)}</td>`;return}
-      const txt=xlText(d,book,m.sheet,row.r,col.c);
+      const txt=xlText(d,book,m.sheet,ar,ac);
       const al=xlCellAlign(v,st);const wrap=st&&st.w;
       let spill='';
       if(txt&&typeof v==='string'&&!wrap&&!ms&&!col.extra&&(!st||!st.h||st.h==='left'||st.h==='general')){
@@ -2283,6 +2320,12 @@ function xlTable(d,book,m,rowsSub,opt){
         while(ix<m.cols.length&&!m.cols[ix].extra){const c2=m.cols[ix].c,k2=row.r+','+c2;if(m.covered.has(k2)||m.master.has(k2)||inputs[XL.colStr(c2)+row.r])break;const v2=book.value(m.sheet,row.r,c2);if(v2!=null&&v2!=='')break;w+=m.cols[ix].w;ix++}
         if(w>col.w){spill=` style="width:${w-4}px"`;cls+=' sp'}}
       h+=`<td class="${cls}"${span}${rc&&rc.f&&opt.track?` data-f="${a}"`:''}${al?` style="${al}"`:''}>${txt?`<div class="xv${wrap?' w':''}"${spill}>${esc(txt)}</div>`:''}</td>`});
+    if(rowControls){
+      const bTxt=String((sh.cells['B'+row.r]||{}).v||'');
+      const isSec=/^\s*\[/.test(bTxt)&&!/Remarks|비고|참고사항/.test(bTxt);
+      if(isSec)h+=`<td class="xrow-action">${window.SalesPilotRows.canDeleteSection(d,m.sheet,row.r,inputs)?`<button type="button" class="xrow-delete" data-delete-section="${row.r}" title="이 구역 표 전체를 견적에서 제외" aria-label="${row.r}행 구역 표 삭제">표 삭제</button>`:''}</td>`;
+      else h+=`<td class="xrow-action">${window.SalesPilotRows.canDelete(d,m.sheet,row.r,inputs)?`<button type="button" class="xrow-delete" data-delete-row="${row.r}" title="이 항목을 견적에서 제외" aria-label="${row.r}행 항목 삭제">삭제</button>`:''}</td>`;
+    }
     h+='</tr>'});
   return h+'</table>';
 }
@@ -2337,10 +2380,10 @@ function xlCoverHtml(d,book){
   return`<div class="page xlp"><div class="xlwrap" style="width:${m.W}px;height:${m.H}px;transform:scale(${s});left:${(794-m.W*s)/2}px;top:20px">${xlTable(d,book,m)}${xlImages(d,m,1,1e9,0)}</div></div>`;
 }
 function xlBook(d,q){const b=new XL.Book(d);(q.inputs||[]).forEach(([k,v])=>{const i=k.lastIndexOf('!');b.inputs[k]=v});
-  const dt=/^(\d{4})-(\d{2})-(\d{2})/.exec(q.quoteDate||'');if(dt)b.today=XL.dateToSerial(+dt[1],+dt[2],+dt[3]);return b}
+  const dt=/^(\d{4})-(\d{2})-(\d{2})/.exec(q.quoteDate||'');if(dt)b.today=XL.dateToSerial(+dt[1],+dt[2],+dt[3]);if(window.SalesPilotRows)window.SalesPilotRows.applyExcluded(b,q,d);return b}
 async function xlQuotePages(q,opt){
   opt=opt||{};const d=await loadTpl(q.tplId);const book=xlBook(d,q);
-  const sh=d.sheets[q.sheet];const m=xlModel(d,q.sheet,sh.pa||[1,1,sh.maxr,sh.maxc]);
+  const sh=d.sheets[q.sheet];const m=xlModel(d,q.sheet,sh.pa||[1,1,sh.maxr,sh.maxc],[],q.excludedRows);
   const out=[];if(q.cover&&opt.cover!==false)out.push(xlCoverHtml(d,book));
   const {pages,s}=xlPageSplit(d,m);pages.forEach((rows,i)=>out.push(xlPageHtml(d,book,m,rows,s,i===0?opt.label:'')));
   return out;
@@ -2414,7 +2457,20 @@ function xlSummaryHtml(){
   const q=S.draft;xlMaterialize(q,X.d,X.book);const t=qTot(q);const disc=t.std-t.amt;
   return`<div class="xsum"><span>일시납 <b>${fmt(t['일시납'])}</b></span><span>월납 <b>${fmt(t['월납'])}</b></span><span>연납 <b>${fmt(t['연납'])}</b></span><span>표준금액 대비 할인 <b>${fmt(disc)}</b> (${t.std?pct(disc/t.std):'0%'})</span><span class="hint">견적번호 ${esc(q.quoteNo||'')}</span></div>`;
 }
-function renderXBody(){
+function syncXEducation(){
+ if(!window.SalesPilotRows||!X.d||!X.book||!S.draft)return false;
+ const q=S.draft,before=JSON.stringify(q.inputs||[]);
+ X.eduStatus=window.SalesPilotRows.sync({d:X.d,book:X.book,q,sheet:q.sheet,inputs:xlInputs(X.d,q.sheet),options:eduOptions(X.d)});
+ window.SalesPilotRows.applyExcluded(X.book,q,X.d);
+ const changed=before!==JSON.stringify(q.inputs||[]);if(changed)setDirty(true);return changed;
+}
+function xRowTools(){const q=S.draft,c=q.educationConfig||{mode:'visit',target:'영리'},status=X.eduStatus||{},n=window.SalesPilotRows.deleted(q,q.sheet).size;
+ return `<div class="x-row-tools"><span>자동 교육비 <b>${status.count||0}</b>개 · SET 우선</span><label>방식 <select data-edu-setting="mode"><option value="visit"${c.mode==='foex'?'':' selected'}>방문</option><option value="foex"${c.mode==='foex'?' selected':''}>FoEX</option></select></label><label>대상 <select data-edu-setting="target"><option${c.target==='비영리'?'':' selected'}>영리</option><option${c.target==='비영리'?' selected':''}>비영리</option></select></label><button type="button" class="btn" data-restore-rows${n?'':' disabled'}>삭제 항목 복원 (${n})</button><div id="x-restore-panel" hidden style="margin-top:6px;border:1px solid #d7dee8;border-radius:8px;background:#fff;max-height:220px;overflow:auto;padding:6px 10px"></div>${status.issues&&status.issues.length?`<details class="x-edu-issues"><summary>교육비 확인 필요 ${status.issues.length}건</summary>${status.issues.map(s=>`<div>${esc(s)}</div>`).join('')}</details>`:''}</div>`;
+}
+function renderXBody(keepPosition=false){
+ const sc0=$('#x-scroll'),active=document.activeElement;
+ const prior=keepPosition&&sc0?{top:sc0.scrollTop,left:sc0.scrollLeft,key:active&&active.dataset?active.dataset.xa:null}:null;
+ syncXEducation();
   if(window.SalesPilotHardwareQuote&&X.d&&X.book&&S.draft){
     let host=document.getElementById('x-hardware-upload');
     if(!host){host=document.createElement('section');host.id='x-hardware-upload';document.getElementById('x-body').before(host);}
@@ -2433,13 +2489,30 @@ function renderXBody(){
   const sheet=X.tab==='chk'?'A10_체크리스트':q.sheet;const sh=d.sheets[sheet];
   const area=X.tab==='chk'?[1,1,Math.min(sh.maxr,90),8]:(sh.pa||[1,1,sh.maxr,sh.maxc]);
   const extra=[];
-  const m=xlModel(d,sheet,area,extra);const inputs=xlInputs(d,sheet);
-  box.innerHTML=`${xlSummaryHtml()}<div class="xhint">${X.tab==='chk'?'노란 칸이 입력 칸입니다. 하드웨어 수량과 설치 위치를 정하면 견적서의 하드웨어·IDC·블루멤버십 금액이 자동으로 계산됩니다.':'노란 칸만 입력하면 됩니다(수량, D/C %, 선택 항목, 헤더). 단가·사양·소계·한글 금액은 양식 수식대로 자동 계산됩니다.'}</div>
-    <div class="xscroll" id="x-scroll"><div class="xzoom" id="x-zoom" style="width:${m.W}px">${xlTable(d,X.book,m,null,{edit:true,inputs,track:true})}<div style="position:absolute;left:0;top:0">${xlImages(d,m,area[0],area[2],0)}</div></div></div>`;
+  const m=xlModel(d,sheet,area,extra,q.excludedRows);const inputs=xlInputs(d,sheet);
+  box.innerHTML=`${xlSummaryHtml()}${X.tab==='chk'?'':xRowTools()}<div class="xhint">${X.tab==='chk'?'노란 칸이 입력 칸입니다. 하드웨어 수량과 설치 위치를 정하면 견적서의 하드웨어·IDC·블루멤버십 금액이 자동으로 계산됩니다.':'노란 칸만 입력하면 됩니다(수량, D/C %, 선택 항목, 헤더). 단가·사양·소계·한글 금액은 양식 수식대로 자동 계산됩니다.'}</div>
+    <div class="xscroll" id="x-scroll"><div class="xzoom" id="x-zoom" style="width:${m.W+(X.tab==='chk'?0:46)}px">${xlTable(d,X.book,m,null,{edit:true,inputs,track:true,rowControls:X.tab!=='chk'})}<div style="position:absolute;left:0;top:0">${xlImages(d,m,area[0],area[2],0)}</div></div></div>`;
+  const tools=box.querySelector('.x-row-tools');if(tools){tools.onchange=e=>{const key=e.target.dataset.eduSetting;if(!key)return;q.educationConfig=Object.assign({mode:'visit',target:'영리',setFirst:true},q.educationConfig||{}, {[key]:e.target.value});setDirty(true);renderXBody(true)};tools.onclick=e=>{
+  if(e.target.closest('[data-restore-rows]')){
+    const panel=$('#x-restore-panel');
+    if(panel&&!panel.hidden){panel.hidden=true;return}
+    const list=window.SalesPilotRows.deletedList(q,X.d,q.sheet,X.inputs);
+    if(panel){
+      panel.innerHTML=list.length?list.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid #eef1f6"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.label)}">${esc(x.label)}</span><button type="button" class="btn" style="padding:2px 10px;font-size:12px" data-restore-one="${x.r}">복원</button></div>`).join('')+`<div style="padding:6px 0 2px;text-align:right"><button type="button" class="btn" style="padding:2px 12px;font-size:12px" data-restore-all>전체 복원</button></div>`:'<div style="padding:4px 0;color:#667">삭제된 항목이 없습니다.</div>';
+      panel.hidden=false;
+    }
+    return;
+  }
+  const one=e.target.closest('[data-restore-one]');
+  if(one){window.SalesPilotRows.restoreOne(q,X.d,q.sheet,+one.dataset.restoreOne,X.inputs);X.book=xlBook(X.d,q);setDirty(true);renderXBody(true);return}
+  if(e.target.closest('[data-restore-all]')){window.SalesPilotRows.restore(q,q.sheet);X.book=xlBook(X.d,q);setDirty(true);renderXBody(true);return}
+};}
   applyZoom(m);
+  if(prior){$('#x-scroll').scrollTop=prior.top;$('#x-scroll').scrollLeft=prior.left;const el=Array.from(box.querySelectorAll('[data-xa]')).find(x=>x.dataset.xa===prior.key);if(el)el.focus({preventScroll:true})}
 }
 function applyZoom(m){const sc=$('#x-scroll'),z=$('#x-zoom');if(!sc||!z)return;const W=+z.style.width.replace('px','');const f=X.zoom==='fit'?Math.min(1,(sc.clientWidth-8)/W):X.zoom;z.style.transform=`scale(${f})`;z.style.transformOrigin='0 0';z.parentElement.style.height=(z.offsetHeight*f+10)+'px'}
 function refreshX(){
+  if(syncXEducation()){renderXBody(true);return}
   X.book.cache.clear();document.querySelectorAll('#x-body td[data-f]').forEach(td=>{const a=td.dataset.f;const m=/^([A-Z]+)(\d+)$/.exec(a);
     const sheet=X.tab==='chk'?'A10_체크리스트':S.draft.sheet;const txt=xlText(X.d,X.book,sheet,+m[2],XL.colNum(m[1]));
     const cur=td.firstChild?td.firstChild.textContent:'';if(cur!==txt){if(!txt)td.innerHTML='';else if(td.firstChild)td.firstChild.textContent=txt;else td.innerHTML=`<div class="xv">${esc(txt)}</div>`}});
@@ -2448,15 +2521,19 @@ function refreshX(){
   document.querySelectorAll('#x-body .xi.pick').forEach(b=>{const k=b.dataset.xa;const v=X.book.inputs[k];if(v)b.textContent=v});
   $('#x-title').textContent=(S.draft.customer||'새 견적')+' · '+xqInfo(S.draft.tplId).name;
 }
-function setXInput(key,v){const q=S.draft;q.inputs=q.inputs||[];const i=q.inputs.findIndex(x=>x[0]===key);if(v===null||v===undefined){if(i>=0)q.inputs.splice(i,1);delete X.book.inputs[key]}else{if(i>=0)q.inputs[i][1]=v;else q.inputs.push([key,v]);X.book.inputs[key]=v}X.book.cache.clear();setDirty(true)}
+function setXInput(key,v){const q=S.draft;if(window.SalesPilotRows)window.SalesPilotRows.manual(q,key);q.inputs=q.inputs||[];const i=q.inputs.findIndex(x=>x[0]===key);if(v===null||v===undefined){if(i>=0)q.inputs.splice(i,1);delete X.book.inputs[key]}else{if(i>=0)q.inputs[i][1]=v;else q.inputs.push([key,v]);X.book.inputs[key]=v}X.book.cache.clear();setDirty(true)}
 let xT;
 $('#x-body').addEventListener('input',e=>{const el=e.target.closest('.xi');if(!el||el.classList.contains('pick'))return;const key=el.dataset.xa;const a=key.slice(key.lastIndexOf('!')+1);
   const sheet=key.slice(0,key.lastIndexOf('!'));const inp=xlInputs(X.d,sheet)[a];let v=el.value;
   if(inp.t==='num'){v=v.trim()===''?0:num(v)}else if(inp.t==='pct'){v=v.trim()===''?null:num(v)/100}else if(inp.t==='text'){el.style.height='auto';el.style.height=el.scrollHeight+'px'}
   setXInput(key,v);clearTimeout(xT);xT=setTimeout(refreshX,150)});
 $('#x-body').addEventListener('change',e=>{const el=e.target.closest('select.xi');if(el){refreshX()}});
-$('#x-body').addEventListener('click',e=>{const b=e.target.closest('.xi.pick');if(!b)return;openPick(b.dataset.pick,b.dataset.xa)});
+$('#x-body').addEventListener('click',e=>{const sec=e.target.closest('[data-delete-section]');if(sec){window.SalesPilotRows.removeSection(S.draft,X.d,S.draft.sheet,+sec.dataset.deleteSection,X.inputs);X.book=xlBook(X.d,S.draft);setDirty(true);renderXBody(true);toast('해당 구역 표를 견적에서 제외했습니다. 삭제 항목 복원에서 되돌릴 수 있습니다.');return}const drop=e.target.closest('[data-delete-row]');if(drop){window.SalesPilotRows.remove(S.draft,S.draft.sheet,+drop.dataset.deleteRow,X.d,X.inputs);X.book=xlBook(X.d,S.draft);setDirty(true);renderXBody(true);return}const b=e.target.closest('.xi.pick');if(!b)return;openPick(b.dataset.pick,b.dataset.xa)});
 function openPick(kind,key){
+  const oldScroll=$('#x-scroll');
+  const oldButton=Array.from(document.querySelectorAll('#x-body .xi.pick')).find(el=>el.dataset.xa===key);
+  const view={top:oldScroll?oldScroll.scrollTop:0,left:oldScroll?oldScroll.scrollLeft:0,
+    x:window.scrollX,y:window.scrollY,anchorTop:oldButton?oldButton.getBoundingClientRect().top:null};
   const d=X.d;const sheet=key.slice(0,key.lastIndexOf('!'));const a=key.slice(key.lastIndexOf('!')+1);const r=+a.replace(/\D/g,'');
   const opts=kind==='edu'?eduOptions(d):oneaiOptions(d);
   const pop=$('#x-pick');pop.hidden=false;
@@ -2468,7 +2545,16 @@ function openPick(kind,key){
     if(i<0){[col,'F','I','K'].forEach(c=>setXInput(sheet+'!'+c+r,null))}
     else if(kind==='edu'){const o=opts[i];set(col,o.name+(bt.dataset.m==='foex'?' (FoEX)':''));set('F',o.spec);set('I',bt.dataset.m==='foex'?o.foex:o.visit)}
     else{const o=opts[i];set(col,o.name);set('F',o.spec);set('I',o.price);set('K',o.unit)}
-    pop.hidden=true;renderXBody()};
+    pop.hidden=true;renderXBody();
+    const sc=$('#x-scroll');
+    if(sc){sc.scrollTop=view.top;sc.scrollLeft=view.left}
+    window.scrollTo(view.x,view.y);
+    const selected=Array.from(document.querySelectorAll('#x-body .xi.pick')).find(el=>el.dataset.xa===key);
+    if(selected){
+      if(sc&&view.anchorTop!==null)sc.scrollTop+=selected.getBoundingClientRect().top-view.anchorTop;
+      selected.focus({preventScroll:true});
+    }
+  };
 }
 document.querySelectorAll('#x-tabs .btn').forEach(b=>b.onclick=()=>{X.tab=b.dataset.xt;document.querySelectorAll('#x-tabs .btn').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderXBody()});
 $('#x-sheet').onchange=e=>{S.draft.sheet=e.target.value;setDirty(true);xlSyncFlags();X.tab='sheet';renderXBar();renderXBody()};
@@ -2478,8 +2564,8 @@ $('#x-cover').onchange=e=>{S.draft.cover=e.target.checked;setDirty(true);if(X.ta
 $('#x-zoomsel').onchange=e=>{X.zoom=e.target.value==='fit'?'fit':+e.target.value;applyZoom()};
 window.addEventListener('resize',()=>{if(S.view==='xedit'&&X.zoom==='fit')applyZoom()});
 $('#x-back').onclick=()=>{const b=$('#x-back');if(S.dirty&&!b.dataset.armed){b.dataset.armed='1';b.textContent='저장 안 하고 나가기';setTimeout(()=>{if(b.dataset.armed){delete b.dataset.armed;b.textContent='← 목록'}},3500);return}delete b.dataset.armed;b.textContent='← 목록';S.draft=null;setDirty(false);show('dash')};
-$('#x-save').onclick=()=>save();
-$('#x-pdf').onclick=async()=>{const b=$('#x-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{xlMaterialize(S.draft,X.d,X.book);await exportPdf(finalize(await xlQuotePages(S.draft)),fileBase())}finally{b.disabled=false;b.textContent='PDF 저장'}};
+$('#x-save').onclick=()=>{syncXEducation();xlMaterialize(S.draft,X.d,X.book);save()};
+$('#x-pdf').onclick=async()=>{const b=$('#x-pdf');b.disabled=true;b.textContent='PDF 만드는 중…';try{xlMaterialize(S.draft,X.d,X.book);await exportPdf(finalize(await xlQuotePages(S.draft)),fileBase())}catch(err){console.error('PDF 저장 오류:',err);toast('PDF 저장 실패: '+(err&&err.message?err.message:err))}finally{b.disabled=false;b.textContent='PDF 저장'}};
 $('#x-html').onclick=async()=>{xlMaterialize(S.draft,X.d,X.book);exportHtml(finalize(await xlQuotePages(S.draft)),fileBase())};
 $('#x-dup').onclick=()=>{const q=clone(S.draft);q.id=uid();q.status='작성중';q.quoteDate=today();openXEditor(q,true);toast('복제했습니다. 저장해야 목록에 추가됩니다.')};
 $('#x-del').onclick=()=>$('#del').click();
@@ -2723,7 +2809,7 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLower
 $('#bdel').onclick=async()=>{const x=$('#bdel');if(!x.dataset.armed){x.dataset.armed='1';x.classList.add('armed');x.textContent='삭제 확인';setTimeout(()=>{if(x.dataset.armed)resetBArm()},3500);return}
   const id=S.bid;resetBArm();if(!S.bisNew){try{if(S.db)await S.db.collection('buildreqs').doc(id).delete();S.buildreqs.delete(id)}catch(_){toast('삭제하지 못했습니다');return}}setBDirty(false);S.bdraft=null;show('dash');setTab('b');toast('삭제했습니다')};
 const bBase=()=>{const b=S.bdraft;return safeName(`${b.customer.name||'고객사'}_구축요청서_${(b.writtenAt||'').slice(0,10)}`)};
-$('#bexp-pdf').onclick=async()=>{const x=$('#bexp-pdf');x.disabled=true;x.textContent='PDF 만드는 중…';try{await exportPdf(await buildReqPages(S.bdraft),bBase())}finally{x.disabled=false;x.textContent='PDF 저장'}};
+$('#bexp-pdf').onclick=async()=>{const x=$('#bexp-pdf');x.disabled=true;x.textContent='PDF 만드는 중…';try{await exportPdf(await buildReqPages(S.bdraft),bBase())}catch(err){console.error('PDF 저장 오류:',err);toast('PDF 저장 실패: '+(err&&err.message?err.message:err))}finally{x.disabled=false;x.textContent='PDF 저장'}};
 $('#bexp-html').onclick=async()=>exportHtml(await buildReqPages(S.bdraft),bBase());
 document.querySelectorAll('.tabs .btn[data-btab]').forEach(x=>x.onclick=()=>{$('#bed-grid').dataset.tab=x.dataset.btab;document.querySelectorAll('.tabs .btn[data-btab]').forEach(y=>y.setAttribute('aria-pressed',String(y===x)));if(x.dataset.btab==='prev')scheduleBPreview()});
 $('#cmk-br').onclick=()=>{if(S.cdirty||S.cisNew){toast('먼저 계약서를 저장하세요');return}startBuildReq(S.cid)};
@@ -3296,11 +3382,38 @@ function renderCust(){const box=$('#x-cust');if(!box)return;const q=S.draft;if(!
   const f=P.fields;const shown=CUST_F.filter(([k])=>f[k]);
   const others=P.quotes.filter(x=>x.id!==q.id);
   box.innerHTML=`<div class="cc-h"><div><div class="cc-e">고객사 정보</div><b>${esc(q.customer)}</b></div><div class="sp"></div>
-    <button class="ib" id="cc-edit">${S.companies.get(ckey(q.customer))?'기업 정보 수정':'기업 정보 추가'}</button></div>
+    <button class="ib" id="cc-edit">${S.companies.get(ckey(q.customer))?'기업 정보 수정':'기업 정보 추가'}</button><button class="ib" id="cc-cert" title="사업자등록증 PDF를 올리면 상호·사업자번호·대표자·주소를 읽어 자동 등록합니다">사업자등록증 업로드</button><input type="file" id="cc-cert-file" accept="application/pdf,.pdf" hidden></div>
     ${shown.length?`<dl class="cc-g">${shown.map(([k,l])=>`<div><dt>${l}</dt><dd title="출처: ${esc(P.src[k])}">${esc(k==='employees'?f[k]+'명'+(f.employeesAt?` (${f.employeesAt} 국민연금 기준)`:''):f[k])}</dd></div>`).join('')}</dl>`:'<p class="hint" style="margin:6px 0 0">아직 등록된 정보가 없습니다. 계약서·상담·구축요청에서 입력한 정보가 여기에 모입니다.</p>'}
     <div class="cc-hist">${others.length?`<span>이전 견적 ${others.length}건</span>`:'<span>첫 견적</span>'}${P.contracts.length?`<span>계약 ${P.contracts.length}건 (체결 ${P.contracts.filter(c=>c.status==='체결완료').length})</span>`:''}${P.meetings.length?`<span>상담 ${P.meetings.length}건</span>`:''}</div>
     <div id="cc-form" hidden></div>`;
-  $('#cc-edit').onclick=()=>custEdit(q.customer)}
+  $('#cc-edit').onclick=()=>custEdit(q.customer);
+  const cf=$('#cc-cert-file');if(cf)cf.onchange=()=>{if(cf.files[0])importBizCert(cf.files[0],q.customer)};$('#cc-cert').onclick=()=>cf.click()}
+async function importBizCert(file,custName){
+  const helper=window.SalesPilotQuoteAssistance;
+  if(!helper||typeof helper.pdfTables!=='function'){toast('PDF 읽기 도구를 불러오지 못했습니다');return}
+  toast('사업자등록증을 읽고 있습니다…');
+  try{
+    const tables=await helper.pdfTables(file);
+    const lines=tables.flatMap(t=>t.rows.map(r=>r.join(' ')));
+    const text=lines.join('\n');
+    const pick=re=>{for(const l of lines){const m=l.match(re);if(m)return m[1].trim()}return ''};
+    const name=pick(/상\s*호[\s:：]*(.{2,40}?)(?:\s{2,}|$)/)||custName;
+    const ceo=pick(/대표자[\s:：]*([가-힣·\s]{2,20})/);
+    const bizNo=pick(/(\d{3}\s*[-–]?\s*\d{2}\s*[-–]?\s*\d{5})/).replace(/[^\d]/g,'');
+    const bizNoFmt=bizNo?bizNo.replace(/(\d{3})(\d{2})(\d{5})/,'$1-$2-$3'):'';
+    const addr=pick(/주\s*소[\s:：]*(.{5,120})/)||pick(/(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[\s\S]{5,100}/);
+    const bizType=pick(/업\s*태[\s:：]*([^\n]{1,30})/);
+    const bizItem=pick(/종\s*목[\s:：]*([^\n]{1,40})/);
+    if(!bizNo&&!ceo&&!addr){toast('사업자등록증에서 정보를 찾지 못했습니다. 기업 정보 추가에서 직접 입력해 주세요');return}
+    const k=ckey(custName);const co=Object.assign({},S.companies.get(k)||{});
+    if(name&&!co.name)co.name=custName;
+    if(bizNoFmt)co.bizNo=bizNoFmt;if(ceo)co.ceo=ceo.replace(/\s+/g,' ').trim();if(addr)co.addr=addr.trim();
+    if(bizType)co.bizType=bizType.trim();if(bizItem)co.bizItem=bizItem.trim();
+    co.updatedAt=new Date(Date.now()+9*3600e3).toISOString().slice(0,19);
+    try{if(S.db)await S.db.collection('companies').doc(cid(k)).set(co)}catch(_){}
+    S.companies.set(k,co);toast('사업자등록증에서 고객사 정보를 등록했습니다'+(bizNoFmt?' ('+bizNoFmt+')':''));renderCust();
+  }catch(err){toast('읽지 못했습니다: '+(err&&err.message||err))}
+}
 function custEdit(name){const k=ckey(name);const co=S.companies.get(k)||{};const P=custProfile(name);const box=$('#cc-form');box.hidden=false;
   const flds=[['bizNo','사업자등록번호'],['ceo','대표자'],['addr','주소'],['bizType','업태'],['bizItem','종목'],['industry','업종 (DART)'],['founded','설립일'],['employees','임직원 수 (국민연금 가입자)'],['employeesAt','기준월 (YYYY-MM)'],['sales','매출액'],['homepage','홈페이지'],['memo','메모']];
   box.innerHTML=`<div class="fgrid" style="margin-top:10px">${flds.map(([f,l])=>`<label class="fld${f==='addr'||f==='memo'?' wide':''}"><span>${l}</span><input id="cc-${f}" value="${esc(co[f]||P.fields[f]||'')}"></label>`).join('')}</div>
@@ -3496,7 +3609,54 @@ async function init(){
   db.collection('buildreqs').onSnapshot(snap=>{const m=new Map();snap.docs.forEach(d=>{const v=d.data();if(v)m.set(d.id,Object.assign({},clone(v),{id:d.id}))});S.buildreqs=m;
     if(S.view==='dash')setTab(S.tab);else if(S.view==='bedit'&&!S.bdirty&&!S.bisNew&&m.has(S.bid)){const nb=m.get(S.bid);if(JSON.stringify(nb)!==JSON.stringify(S.bdraft)){S.bdraft=clone(nb);renderBForm();scheduleBPreview()}}},()=>{});
   vInit(c,db);
-  db.collection('termdocs').onSnapshot(snap=>{const m=new Map();snap.docs.forEach(d=>{const v=d.data();if(v)m.set(d.id,Object.assign({},clone(v),{id:d.id}))});S.terms=m;if(S.view==='cedit'&&!S.cdirty)renderCForm()},()=>{});
+  db.collection('termdocs').onSnapshot(snap=>{const m=new Map();snap.docs.forEach(d=>{const v=d.data();if(v)m.set(d.id,Object.assign({},clone(v),{id:d.id}))});S.terms=m;if(S.view==='cedit'&&!S.cdirty)renderCForm();seedTerms()},()=>{});
+
+/* ---------- 기본 약관 자동 등록(시드) ---------- */
+let seedTermsDone=false,seedTermsBusy=false;
+const SEED_TERMS=[
+ {name:'더존 서비스 이용약관',kind:'약관',variant:'패키지',types:['csap','cloud'],coverTitle:'서비스 이용약관'},
+ {name:'더존 서비스 공급약관',kind:'약관',variant:'패키지',types:['onprem','onepe'],coverTitle:'서비스 공급약관'},
+ {name:'개인정보처리방침',kind:'개인정보',variant:'',types:['csap','cloud','onprem','onepe','dogup'],coverTitle:'개인정보처리방침'},
+ {name:'서비스수준협약서(SLA)',kind:'SLA',variant:'',types:['csap'],coverTitle:'서비스수준협약서(SLA)'}
+];
+function seedTermHtml(t){const d=today();const lines=[];
+ for(let i=1;i<=14;i++)lines.push('<div class="tl"><b>제'+i+'조.</b> (내용 준비 중) 본 약관의 세부 조항은 더존비즈온 표준 약관 원문으로 대체됩니다. 설정 화면에서 PDF를 다시 올리면 원본으로 교체됩니다.</div>');
+ return '<div class="page tpl-ct"><div class="ccover"><div class="mp">Maximizing<br>Potential</div><div class="ctt tct">'+esc(t.coverTitle)+'</div><div class="lines" style="margin-top:70px">서비스 제공자 : (주)더존비즈온\n적용일 : '+d+'</div></div><div class="ctbody" style="padding:24mm 20mm;font-size:11px;line-height:1.7">'+lines.join('')+'</div></div>';}
+function syncSeedTypes(){
+ try{
+  for(const t of SEED_TERMS){
+   let found=null;
+   for(const d of S.terms.values()){if(d.name===t.name&&d.seeded){found=d;break}}
+   if(!found)continue;
+   const set=new Set(found.types||[]);
+   let changed=false;
+   t.types.forEach(x=>{if(!set.has(x)){set.add(x);changed=true}});
+   if(changed){
+    found.types=[...set];
+    S.db.collection('termdocs').doc(found.id).update({types:found.types}).catch(()=>{});
+   }
+  }
+ }catch(_){}
+}
+async function seedTerms(){
+ if(seedTermsDone||seedTermsBusy||!S.assets||!S.db||!S.terms)return;
+ if(S.terms.size>0){syncSeedTypes();seedTermsDone=true;return}
+ if(window.SalesPilotPdfTools){try{const ok=await window.SalesPilotPdfTools.ensure();if(!ok)return}catch(_){return}}
+ seedTermsBusy=true;
+ try{
+  for(const t of SEED_TERMS){
+   try{
+    const html=seedTermHtml(t);
+    const blob=(await htmlToPdf([html])).output('blob');
+    const file=new File([blob],t.name+'.pdf',{type:'application/pdf'});
+    const r=await S.assets.put(file);
+    const doc={name:t.name,assetId:r.id,types:t.types.slice(),kind:t.kind,variant:t.variant,coverTitle:t.coverTitle,skipFirst:true,seeded:true,uploadedAt:new Date().toISOString().slice(0,19)};
+    await S.db.collection('termdocs').doc(r.id).set(doc);
+    S.terms.set(r.id,Object.assign({id:r.id},doc));
+   }catch(_){}
+  }
+ }finally{seedTermsBusy=false;seedTermsDone=true}
+}
 }
 init();
 })();
